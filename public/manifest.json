@@ -1,0 +1,24 @@
+{
+  "name": "ChargeNode DevOps",
+  "short_name": "CN DevOps",
+  "description": "Mobile frontend for Azure DevOps — boards, pipelines & releases",
+  "start_url": "/ChargeNodeDevOps/",
+  "scope": "/ChargeNodeDevOps/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#0078d4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "icons/icon-192.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
