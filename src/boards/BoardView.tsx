@@ -3,8 +3,6 @@ import { Icon } from '@mdi/react'
 import { mdiRefresh, mdiChevronDown, mdiBug, mdiBookOpen, mdiCheckboxMarked, mdiCardText, mdiPlus, mdiMagnify, mdiClose } from '@mdi/js'
 import type { DevOpsClient } from '../api/devops'
 import {
-  listTeams,
-  listBoards,
   getBoard,
   queryLaneItems,
   queryLaneCounts,
@@ -12,11 +10,12 @@ import {
   queryColumnCounts,
   searchWorkItems,
   getWorkItems,
-  type TeamRef,
-  type BoardRef,
   type Board,
   type WorkItem,
 } from '../api/boards'
+import { useBoardSelector } from './useBoardSelector'
+import { useLazyItems } from './useLazyItems'
+import { WorkItemCard } from './WorkItemCard'
 import { WorkItemDialog } from './WorkItemDialog'
 import { NewWorkItemDialog } from './NewWorkItemDialog'
 import './BoardView.css'
@@ -26,56 +25,17 @@ interface Props {
   project: string
 }
 
-const WIT_ICONS: Record<string, string> = {
-  Bug: mdiBug,
-  'User Story': mdiBookOpen,
-  Task: mdiCheckboxMarked,
-}
-
-const TEAM_KEY = (p: string) => `cn-devops-board-team-${p}`
-const BOARD_KEY = (p: string) => `cn-devops-board-name-${p}`
-
-function renderCard(item: WorkItem, onClick: () => void) {
-  return (
-    <li key={item.id} className="board-card" onClick={onClick}>
-      <Icon
-        path={WIT_ICONS[item.fields['System.WorkItemType']] ?? mdiCardText}
-        size={0.7}
-        className={`wit-icon wit-${item.fields['System.WorkItemType'].toLowerCase().replace(/\s/g, '-')}`}
-      />
-      <div className="card-details">
-        <span className="card-title">{item.fields['System.Title']}</span>
-        {item.fields['System.AssignedTo'] && (
-          <span className="card-meta">{item.fields['System.AssignedTo'].displayName}</span>
-        )}
-      </div>
-    </li>
-  )
+function boardTypes(board: Board): string[] {
+  return [...new Set(board.columns.flatMap(c => Object.keys(c.stateMappings)))]
 }
 
 export function BoardView({ client, project }: Props) {
-  const [teams, setTeams] = useState<TeamRef[]>([])
-  const [team, setTeam] = useState('')
-  const [boards, setBoards] = useState<BoardRef[]>([])
-  const [boardName, setBoardName] = useState('')
+  const selector = useBoardSelector(client, project)
+  const { team, boardName, error, setError } = selector
+
   const [board, setBoard] = useState<Board | null>(null)
   const [hasSwimLanes, setHasSwimLanes] = useState(false)
-
-  // Lane mode state (boards with swimlanes)
-  const [laneCounts, setLaneCounts] = useState<Record<string, number>>({})
-  const [laneItems, setLaneItems] = useState<Record<string, WorkItem[]>>({})
-  const [expandedLanes, setExpandedLanes] = useState<Set<string>>(new Set())
-  const [activeCol, setActiveCol] = useState<Record<string, string>>({})
-  const [loadingLanes, setLoadingLanes] = useState<Set<string>>(new Set())
-
-  // Column mode state (boards without swimlanes)
-  const [columnCounts, setColumnCounts] = useState<Record<string, number>>({})
-  const [columnItems, setColumnItems] = useState<Record<string, WorkItem[]>>({})
-  const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set())
-  const [loadingCols, setLoadingCols] = useState<Set<string>>(new Set())
-
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null)
   const [showNew, setShowNew] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
@@ -83,77 +43,45 @@ export function BoardView({ client, project }: Props) {
   const [searchResults, setSearchResults] = useState<WorkItem[] | null>(null)
   const [searching, setSearching] = useState(false)
 
-  function selectTeam(name: string) {
-    setTeam(name)
-    localStorage.setItem(TEAM_KEY(project), name)
-  }
+  // Active column per lane (swimlane mode accordion)
+  const [activeCol, setActiveCol] = useState<Record<string, string>>({})
 
-  function selectBoard(name: string) {
-    setBoardName(name)
-    localStorage.setItem(BOARD_KEY(project), name)
-  }
+  const lanes = useLazyItems(async (key) => {
+    const laneName = key === '' ? null : key
+    const types = board ? boardTypes(board) : []
+    const ids = await queryLaneItems(client, project, team, laneName, types)
+    return ids.length > 0 ? await getWorkItems(client, project, ids) : []
+  })
 
-  useEffect(() => {
-    if (!project) return
-    setTeams([]); setTeam(''); setBoards([]); setBoardName('')
-    setBoard(null)
-    listTeams(client, project).then(t => {
-      setTeams(t)
-      if (t.length > 0) {
-        const saved = localStorage.getItem(TEAM_KEY(project))
-        const match = saved && t.find(x => x.name === saved)
-        const def = match || t.find(x => x.name === project) || t[0]
-        selectTeam(def.name)
-      }
-    }).catch(() => setError('Failed to load teams'))
-  }, [client, project])
-
-  useEffect(() => {
-    if (!team) return
-    setBoards([]); setBoardName(''); setBoard(null)
-    listBoards(client, project, team).then(b => {
-      setBoards(b)
-      if (b.length > 0) {
-        const saved = localStorage.getItem(BOARD_KEY(project))
-        const match = saved && b.find(x => x.name === saved)
-        const def = match || b[0]
-        selectBoard(def.name)
-      }
-    }).catch(() => setError('Failed to load boards'))
-  }, [client, project, team])
-
-  function resetState() {
-    setLaneCounts({}); setLaneItems({}); setExpandedLanes(new Set()); setActiveCol({}); setLoadingLanes(new Set())
-    setColumnCounts({}); setColumnItems({}); setExpandedCols(new Set()); setLoadingCols(new Set())
-  }
+  const columns = useLazyItems(async (key) => {
+    const types = board ? boardTypes(board) : []
+    const ids = await queryColumnItems(client, project, team, key, types)
+    return ids.length > 0 ? await getWorkItems(client, project, ids) : []
+  })
 
   const loadBoard = useCallback(async () => {
     if (!boardName || !team) return
     setLoading(true); setError('')
-    resetState()
+    lanes.reset(); columns.reset(); setActiveCol({})
     try {
       const b = await getBoard(client, project, team, boardName)
-      const namedRows = b.rows.filter(r => r.name !== null)
-      const swimLanes = namedRows.length > 0
+      const swimLanes = b.rows.some(r => r.name !== null)
       setHasSwimLanes(swimLanes)
 
-      const allowedTypes = [...new Set(b.columns.flatMap(c => Object.keys(c.stateMappings)))]
+      const types = boardTypes(b)
 
       if (swimLanes) {
-        const hasDefault = b.rows.some(r => r.name === null)
-        if (!hasDefault) {
+        if (!b.rows.some(r => r.name === null)) {
           b.rows.unshift({ id: '__default__', name: null })
         }
         setBoard(b)
-        const laneNames = b.rows.map(r => r.name)
-        const counts = await queryLaneCounts(client, project, team, laneNames, allowedTypes)
-        setLaneCounts(counts)
+        const counts = await queryLaneCounts(client, project, team, b.rows.map(r => r.name), types)
+        lanes.setCounts(counts)
       } else {
         setBoard(b)
-        // Skip last column (Done/Closed)
         const colNames = b.columns.slice(0, -1).map(c => c.name)
-        const counts = await queryColumnCounts(client, project, team, colNames, allowedTypes)
-        setColumnCounts(counts)
+        const counts = await queryColumnCounts(client, project, team, colNames, types)
+        columns.setCounts(counts)
       }
     } catch {
       setError('Failed to load board')
@@ -164,146 +92,16 @@ export function BoardView({ client, project }: Props) {
 
   useEffect(() => { loadBoard() }, [loadBoard])
 
-  // --- Lane mode helpers ---
-
-  function laneKey(row: { name: string | null }) {
-    return row.name ?? ''
-  }
-
-  function boardTypes(): string[] {
-    if (!board) return []
-    return [...new Set(board.columns.flatMap(c => Object.keys(c.stateMappings)))]
-  }
-
-  async function loadLane(row: { name: string | null }) {
-    const key = laneKey(row)
-    setLoadingLanes(prev => new Set(prev).add(key))
-    try {
-      const ids = await queryLaneItems(client, project, team, row.name, boardTypes())
-      const wi = ids.length > 0 ? await getWorkItems(client, project, ids) : []
-      setLaneItems(prev => ({ ...prev, [key]: wi }))
-    } catch {
-      setError('Failed to load lane')
-    } finally {
-      setLoadingLanes(prev => { const n = new Set(prev); n.delete(key); return n })
-    }
-  }
-
-  function toggleLane(row: { name: string | null }) {
-    const key = laneKey(row)
-    setExpandedLanes(prev => {
-      const next = new Set(prev)
-      if (next.has(key)) {
-        next.delete(key)
-      } else {
-        next.add(key)
-        if (!laneItems[key]) loadLane(row)
-      }
-      return next
-    })
-  }
-
-  function toggleCol(laneK: string, colName: string) {
-    setActiveCol(prev => ({
-      ...prev,
-      [laneK]: prev[laneK] === colName ? '' : colName,
-    }))
-  }
-
   function columnsForLane(isDefault: boolean) {
     if (!board) return []
-    if (isDefault) return board.columns.slice(0, 1)
-    return board.columns.slice(1, -1)
+    return isDefault ? board.columns.slice(0, 1) : board.columns.slice(1, -1)
   }
-
-  function itemsForCol(allItems: WorkItem[], colName: string) {
-    return allItems.filter(i => i.fields['System.BoardColumn'] === colName)
-  }
-
-  // --- Column mode helpers ---
-
-  async function loadColumn(colName: string) {
-    setLoadingCols(prev => new Set(prev).add(colName))
-    try {
-      const ids = await queryColumnItems(client, project, team, colName, boardTypes())
-      const wi = ids.length > 0 ? await getWorkItems(client, project, ids) : []
-      setColumnItems(prev => ({ ...prev, [colName]: wi }))
-    } catch {
-      setError(`Failed to load ${colName}`)
-    } finally {
-      setLoadingCols(prev => { const n = new Set(prev); n.delete(colName); return n })
-    }
-  }
-
-  function toggleColumnDirect(colName: string) {
-    setExpandedCols(prev => {
-      const next = new Set(prev)
-      if (next.has(colName)) {
-        next.delete(colName)
-      } else {
-        next.add(colName)
-        if (!columnItems[colName]) loadColumn(colName)
-      }
-      return next
-    })
-  }
-
-  // --- Shared helpers ---
 
   function handleItemUpdated(updated: WorkItem) {
     if (hasSwimLanes) {
-      const newLane = updated.fields['System.BoardLane'] ?? ''
-      setLaneItems(prev => {
-        const next = { ...prev }
-        // Remove from all lanes
-        for (const key of Object.keys(next)) {
-          next[key] = next[key].filter(i => i.id !== updated.id)
-        }
-        // Add to target lane (only if it was already loaded)
-        if (next[newLane]) {
-          next[newLane] = [...next[newLane], updated]
-        } else {
-          // Not loaded yet — invalidate so it reloads on expand
-          delete next[newLane]
-        }
-        return next
-      })
-      setLaneCounts(prev => {
-        const counts = { ...prev }
-        for (const [key, items] of Object.entries(laneItems)) {
-          if (items.some(i => i.id === updated.id) && key !== newLane) {
-            counts[key] = Math.max(0, (counts[key] ?? 0) - 1)
-            counts[newLane] = (counts[newLane] ?? 0) + 1
-            break
-          }
-        }
-        return counts
-      })
+      lanes.moveItem(updated, updated.fields['System.BoardLane'] as string ?? '')
     } else {
-      const newCol = updated.fields['System.BoardColumn'] ?? ''
-      setColumnItems(prev => {
-        const next = { ...prev }
-        for (const key of Object.keys(next)) {
-          next[key] = next[key].filter(i => i.id !== updated.id)
-        }
-        if (next[newCol]) {
-          next[newCol] = [...next[newCol], updated]
-        } else {
-          delete next[newCol]
-        }
-        return next
-      })
-      setColumnCounts(prev => {
-        const counts = { ...prev }
-        for (const [key, items] of Object.entries(columnItems)) {
-          if (items.some(i => i.id === updated.id) && key !== newCol) {
-            counts[key] = Math.max(0, (counts[key] ?? 0) - 1)
-            counts[newCol] = (counts[newCol] ?? 0) + 1
-            break
-          }
-        }
-        return counts
-      })
+      columns.moveItem(updated, updated.fields['System.BoardColumn'] as string ?? '')
     }
     setSelectedItem(updated)
   }
@@ -331,14 +129,14 @@ export function BoardView({ client, project }: Props) {
   return (
     <div className="board-view">
       <div className="board-controls">
-        {teams.length > 1 && (
-          <select value={team} onChange={e => selectTeam(e.target.value)} className="board-select">
-            {teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+        {selector.teams.length > 1 && (
+          <select value={team} onChange={e => selector.selectTeam(e.target.value)} className="board-select">
+            {selector.teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
           </select>
         )}
-        {boards.length > 1 && (
-          <select value={boardName} onChange={e => selectBoard(e.target.value)} className="board-select">
-            {boards.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+        {selector.boards.length > 1 && (
+          <select value={boardName} onChange={e => selector.selectBoard(e.target.value)} className="board-select">
+            {selector.boards.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
           </select>
         )}
         <div className="btn-group">
@@ -387,7 +185,7 @@ export function BoardView({ client, project }: Props) {
                   <span className="card-meta">
                     {item.fields['System.BoardColumn']}
                     {item.fields['System.AssignedTo'] && (
-                      <> &middot; {item.fields['System.AssignedTo'].displayName}</>
+                      <> &middot; {(item.fields['System.AssignedTo'] as { displayName: string }).displayName}</>
                     )}
                   </span>
                 </div>
@@ -404,13 +202,13 @@ export function BoardView({ client, project }: Props) {
       {board && !loading && !hasSwimLanes && (
         <div className="board-lanes">
           {board.columns.slice(0, -1).map(col => {
-            const isExpanded = expandedCols.has(col.name)
-            const isLoading = loadingCols.has(col.name)
-            const items = columnItems[col.name]
-            const count = columnCounts[col.name] ?? 0
+            const isExpanded = columns.expanded.has(col.name)
+            const isLoading = columns.loading.has(col.name)
+            const items = columns.items[col.name]
+            const count = columns.counts[col.name] ?? 0
             return (
               <div key={col.id} className="board-lane">
-                <button className="board-lane-header" onClick={() => toggleColumnDirect(col.name)}>
+                <button className="board-lane-header" onClick={() => columns.toggle(col.name)}>
                   <span className="board-lane-name">{col.name}</span>
                   <span className="board-column-count">{count}</span>
                   <span className={`expand-icon ${isExpanded ? 'open' : ''}`}>
@@ -422,10 +220,8 @@ export function BoardView({ client, project }: Props) {
                     {isLoading && <p className="loading">Loading...</p>}
                     {items && (
                       <ul className="board-cards">
-                        {items.length === 0 && (
-                          <li className="board-card muted">No items</li>
-                        )}
-                        {items.map(item => renderCard(item, () => setSelectedItem(item)))}
+                        {items.length === 0 && <li className="board-card muted">No items</li>}
+                        {items.map(item => <WorkItemCard key={item.id} item={item} onClick={() => setSelectedItem(item)} />)}
                       </ul>
                     )}
                   </>
@@ -440,18 +236,18 @@ export function BoardView({ client, project }: Props) {
       {board && !loading && hasSwimLanes && (
         <div className="board-lanes">
           {board.rows.map(row => {
-            const lk = laneKey(row)
+            const lk = row.name ?? ''
             const isDefault = row.name === null
-            const isExpanded = expandedLanes.has(lk)
-            const isLoading = loadingLanes.has(lk)
-            const items = laneItems[lk]
-            const count = laneCounts[lk] ?? 0
+            const isExpanded = lanes.expanded.has(lk)
+            const isLoading = lanes.loading.has(lk)
+            const items = lanes.items[lk]
+            const count = lanes.counts[lk] ?? 0
             const activeName = activeCol[lk] ?? ''
             const cols = columnsForLane(isDefault)
 
             return (
               <div key={row.id} className="board-lane">
-                <button className="board-lane-header" onClick={() => toggleLane(row)}>
+                <button className="board-lane-header" onClick={() => lanes.toggle(lk)}>
                   <span className="board-lane-name">{row.name ?? 'Backlog'}</span>
                   <span className="board-column-count">{count}</span>
                   <span className={`expand-icon ${isExpanded ? 'open' : ''}`}>
@@ -464,10 +260,8 @@ export function BoardView({ client, project }: Props) {
                     {isLoading && <p className="loading">Loading...</p>}
                     {items && (
                       <ul className="board-cards">
-                        {items.length === 0 && (
-                          <li className="board-card muted">No items</li>
-                        )}
-                        {items.map(item => renderCard(item, () => setSelectedItem(item)))}
+                        {items.length === 0 && <li className="board-card muted">No items</li>}
+                        {items.map(item => <WorkItemCard key={item.id} item={item} onClick={() => setSelectedItem(item)} />)}
                       </ul>
                     )}
                   </>
@@ -477,23 +271,24 @@ export function BoardView({ client, project }: Props) {
                   <div className="board-columns-row">
                     {isLoading && <p className="loading">Loading...</p>}
                     {items && cols.map(col => {
-                      const colItems = itemsForCol(items, col.name)
+                      const colItems = items.filter(i => i.fields['System.BoardColumn'] === col.name)
                       const isActive = activeName === col.name
                       return (
                         <div key={col.id} className={`board-col-strip ${isActive ? 'active' : ''}`}>
                           <button
                             className="board-col-tab"
-                            onClick={() => toggleCol(lk, col.name)}
+                            onClick={() => setActiveCol(prev => ({
+                              ...prev,
+                              [lk]: prev[lk] === col.name ? '' : col.name,
+                            }))}
                           >
                             <span className="board-col-tab-name">{col.name}</span>
                             <span className="board-col-tab-count">{colItems.length}</span>
                           </button>
                           {isActive && (
                             <ul className="board-cards">
-                              {colItems.length === 0 && (
-                                <li className="board-card muted">No items</li>
-                              )}
-                              {colItems.map(item => renderCard(item, () => setSelectedItem(item)))}
+                              {colItems.length === 0 && <li className="board-card muted">No items</li>}
+                              {colItems.map(item => <WorkItemCard key={item.id} item={item} onClick={() => setSelectedItem(item)} />)}
                             </ul>
                           )}
                         </div>
@@ -524,11 +319,17 @@ export function BoardView({ client, project }: Props) {
           client={client}
           project={project}
           team={team}
-          workItemTypes={[...new Set(board.columns.flatMap(c => Object.keys(c.stateMappings)))]}
+          workItemTypes={boardTypes(board)}
           onClose={() => setShowNew(false)}
           onCreated={() => { setShowNew(false); loadBoard() }}
         />
       )}
     </div>
   )
+}
+
+const WIT_ICONS: Record<string, string> = {
+  Bug: mdiBug,
+  'User Story': mdiBookOpen,
+  Task: mdiCheckboxMarked,
 }
