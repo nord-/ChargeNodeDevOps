@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cn-devops-v2.1.4';
+const CACHE_NAME = 'cn-devops-v__SW_VERSION__';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
