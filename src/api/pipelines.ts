@@ -1,0 +1,40 @@
+import type { DevOpsClient } from './devops'
+
+export interface Pipeline {
+  id: number
+  name: string
+  folder: string
+  revision: number
+}
+
+interface PipelineListResponse {
+  value: Pipeline[]
+  count: number
+}
+
+export interface PipelineRun {
+  id: number
+  name: string
+  state: 'unknown' | 'inProgress' | 'completed' | 'canceling'
+  result?: 'unknown' | 'succeeded' | 'failed' | 'canceled'
+  createdDate: string
+  finishedDate?: string
+  pipeline: { id: number; name: string }
+}
+
+interface PipelineRunListResponse {
+  value: PipelineRun[]
+  count: number
+}
+
+export async function listPipelines(client: DevOpsClient, project: string): Promise<Pipeline[]> {
+  const res = await client.get<PipelineListResponse>(`${project}/_apis/pipelines?api-version=7.1`)
+  return res.value
+}
+
+export async function listPipelineRuns(client: DevOpsClient, project: string, pipelineId: number): Promise<PipelineRun[]> {
+  const res = await client.get<PipelineRunListResponse>(
+    `${project}/_apis/pipelines/${pipelineId}/runs?api-version=7.1`
+  )
+  return res.value
+}

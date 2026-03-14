@@ -1,9 +1,14 @@
+import { useState } from 'react'
 import { useAuth } from './auth/AuthContext'
 import { ConnectPage } from './auth/ConnectPage'
+import { PipelineList } from './pipelines/PipelineList'
 import './App.css'
+
+type Tab = 'boards' | 'pipelines' | 'releases'
 
 function App() {
   const { auth, logout } = useAuth()
+  const [tab, setTab] = useState<Tab>('pipelines')
 
   if (!auth) return <ConnectPage />
 
@@ -14,12 +19,14 @@ function App() {
         <button className="disconnect-btn" onClick={logout}>Disconnect</button>
       </header>
       <nav className="nav">
-        <button className="nav-btn active">Boards</button>
-        <button className="nav-btn">Pipelines</button>
-        <button className="nav-btn">Releases</button>
+        <button className={`nav-btn ${tab === 'boards' ? 'active' : ''}`} onClick={() => setTab('boards')}>Boards</button>
+        <button className={`nav-btn ${tab === 'pipelines' ? 'active' : ''}`} onClick={() => setTab('pipelines')}>Pipelines</button>
+        <button className={`nav-btn ${tab === 'releases' ? 'active' : ''}`} onClick={() => setTab('releases')}>Releases</button>
       </nav>
       <main className="content">
-        <p className="placeholder">Connected to <strong>{auth.organization}</strong></p>
+        {tab === 'boards' && <p className="placeholder">Boards — coming soon</p>}
+        {tab === 'pipelines' && <PipelineList />}
+        {tab === 'releases' && <p className="placeholder">Releases — coming soon</p>}
       </main>
     </div>
   )
