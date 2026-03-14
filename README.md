@@ -9,8 +9,9 @@ Mobile-friendly PWA for interacting with Azure DevOps on the go.
 - **Auth** — Connect with a Personal Access Token (PAT)
 - **Pipelines** — List, trigger on any branch, view build runs with status and commit messages
 - **Releases** — List definitions, view releases with build info, deploy/redeploy stages, approve/reject pending approvals
+- **Boards** — View work items by swimlane and column, read descriptions, change column/swimlane/assignee, create new items, free-text search
 - **Favorites** — Star pipelines and release definitions for quick access
-- **PWA** — Installable on Android/iOS with offline shell caching
+- **PWA** — Installable on Android/iOS, network-first updates, offline fallback
 
 ## Tech stack
 

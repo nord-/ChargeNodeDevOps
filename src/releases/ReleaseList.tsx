@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Icon } from '@mdi/react'
-import { mdiStar, mdiStarOutline, mdiChevronDown, mdiCheck, mdiClose, mdiRocketLaunch } from '@mdi/js'
+import { mdiStar, mdiStarOutline, mdiChevronDown, mdiCheck, mdiClose, mdiRocketLaunch, mdiRefresh } from '@mdi/js'
 import { formatDate } from '../formatDate'
 import type { DevOpsClient } from '../api/devops'
 import {
@@ -86,6 +86,27 @@ export function ReleaseList({ client, project }: Props) {
     } finally {
       setReleasesLoading(false)
     }
+  }
+
+  async function reloadReleases(defId: number) {
+    setReleases([])
+    setReleasesLoading(true)
+    try {
+      const r = await listReleases(client, project, defId)
+      setReleases(r)
+    } catch {
+      setReleases([])
+    } finally {
+      setReleasesLoading(false)
+    }
+  }
+
+  async function reloadRelease(releaseId: number) {
+    if (expandedDefId !== null) {
+      const r = await listReleases(client, project, expandedDefId)
+      setReleases(r)
+    }
+    await loadApprovals(releaseId)
   }
 
   const loadApprovals = useCallback(async (releaseId: number) => {
@@ -178,8 +199,15 @@ export function ReleaseList({ client, project }: Props) {
             onClick={() => toggleReleases(d.id)}
           >
             <span className="def-name">{d.name}</span>
-            <span className={`expand-icon ${expandedDefId === d.id ? 'open' : ''}`}><Icon path={mdiChevronDown} size={0.8} /></span>
           </button>
+          <div className="btn-group">
+            <button className="btn-action" onClick={() => reloadReleases(d.id)} title="Refresh releases">
+              <Icon path={mdiRefresh} size={0.85} />
+            </button>
+          </div>
+          <span className={`expand-icon row-chevron ${expandedDefId === d.id ? 'open' : ''}`} onClick={() => toggleReleases(d.id)}>
+            <Icon path={mdiChevronDown} size={0.8} />
+          </span>
         </div>
         {expandedDefId === d.id && (
           <div className="releases-panel">
@@ -195,31 +223,40 @@ export function ReleaseList({ client, project }: Props) {
                 const isExpanded = expandedReleaseId === r.id
                 return (
                   <li key={r.id} className="release-item-wrap">
-                    <button className="release-item-btn" onClick={() => toggleRelease(r.id)}>
-                      <span className={`release-status ${mapStatus(r.status)}`} />
-                      <div className="release-details">
-                        <span className="release-name">
-                          {r.name}
-                          {buildVersion && (
-                            <span className="release-build"> &bull; {buildVersion}</span>
-                          )}
-                        </span>
-                        <span className="release-meta">
-                          {r.environments.map(e => (
-                            <span key={e.id} className={`env-badge ${mapStatus(e.status)}`}>
-                              {e.name}
-                            </span>
-                          ))}
-                        </span>
-                        <span className="release-meta">
-                          {buildBranch && (
-                            <><span className="release-branch">{buildBranch}</span> &middot; </>
-                          )}
-                          {r.createdBy.displayName} &middot; {formatDate(r.createdOn)}
-                        </span>
+                    <div className="release-item-row">
+                      <button className="release-item-btn" onClick={() => toggleRelease(r.id)}>
+                        <span className={`release-status ${mapStatus(r.status)}`} />
+                        <div className="release-details">
+                          <span className="release-name">
+                            {r.name}
+                            {buildVersion && (
+                              <span className="release-build"> &bull; {buildVersion}</span>
+                            )}
+                          </span>
+                          <span className="release-meta">
+                            {r.environments.map(e => (
+                              <span key={e.id} className={`env-badge ${mapStatus(e.status)}`}>
+                                {e.name}
+                              </span>
+                            ))}
+                          </span>
+                          <span className="release-meta">
+                            {buildBranch && (
+                              <><span className="release-branch">{buildBranch}</span> &middot; </>
+                            )}
+                            {r.createdBy.displayName} &middot; {formatDate(r.createdOn)}
+                          </span>
+                        </div>
+                      </button>
+                      <div className="btn-group">
+                        <button className="btn-action" onClick={e => { e.stopPropagation(); reloadRelease(r.id) }} title="Refresh">
+                          <Icon path={mdiRefresh} size={0.7} />
+                        </button>
                       </div>
-                      <span className={`expand-icon ${isExpanded ? 'open' : ''}`}><Icon path={mdiChevronDown} size={0.7} /></span>
-                    </button>
+                      <span className={`expand-icon row-chevron ${isExpanded ? 'open' : ''}`} onClick={() => toggleRelease(r.id)}>
+                        <Icon path={mdiChevronDown} size={0.7} />
+                      </span>
+                    </div>
                     {isExpanded && (
                       <div className="stages-panel">
                         {approvalsLoading && <p className="loading">Loading stages...</p>}

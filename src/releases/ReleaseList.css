@@ -31,7 +31,6 @@
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 14px 16px 14px 12px;
   border: none;
   background: transparent;
@@ -68,8 +67,17 @@
   border-bottom: none;
 }
 
+.release-item-row {
+  display: flex;
+  align-items: center;
+}
+
+.release-item-row .btn-refresh {
+  margin-right: 8px;
+}
+
 .release-item-btn {
-  width: 100%;
+  flex: 1;
   display: flex;
   align-items: flex-start;
   gap: 10px;

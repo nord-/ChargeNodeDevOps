@@ -5,6 +5,7 @@ import { useAuth } from './auth/AuthContext'
 import { ConnectPage } from './auth/ConnectPage'
 import { createClient } from './api/devops'
 import { listProjects, type Project } from './api/projects'
+import { BoardView } from './boards/BoardView'
 import { PipelineList } from './pipelines/PipelineList'
 import { ReleaseList } from './releases/ReleaseList'
 import './App.css'
@@ -66,22 +67,27 @@ function App() {
           <button className="disconnect-btn" onClick={logout}>Disconnect</button>
         </div>
       </header>
-      <nav className="nav">
-        <button className={`nav-btn ${tab === 'boards' ? 'active' : ''}`} onClick={() => { setTab('boards'); localStorage.setItem(TAB_KEY, 'boards') }}>
-          <Icon path={mdiViewDashboard} size={0.8} /> Boards
-        </button>
-        <button className={`nav-btn ${tab === 'pipelines' ? 'active' : ''}`} onClick={() => { setTab('pipelines'); localStorage.setItem(TAB_KEY, 'pipelines') }}>
-          <Icon path={mdiPipe} size={0.8} /> Pipelines
-        </button>
-        <button className={`nav-btn ${tab === 'releases' ? 'active' : ''}`} onClick={() => { setTab('releases'); localStorage.setItem(TAB_KEY, 'releases') }}>
-          <Icon path={mdiRocketLaunch} size={0.8} /> Releases
-        </button>
-      </nav>
-      <main className="content">
-        {tab === 'boards' && <p className="placeholder">Boards — coming soon</p>}
+      <div className="body">
+        <nav className="nav">
+          <button className={`nav-btn ${tab === 'boards' ? 'active' : ''}`} onClick={() => { setTab('boards'); localStorage.setItem(TAB_KEY, 'boards') }} title="Boards">
+            <Icon path={mdiViewDashboard} size={1} />
+            <span className="nav-label">Boards</span>
+          </button>
+          <button className={`nav-btn ${tab === 'pipelines' ? 'active' : ''}`} onClick={() => { setTab('pipelines'); localStorage.setItem(TAB_KEY, 'pipelines') }} title="Pipelines">
+            <Icon path={mdiPipe} size={1} />
+            <span className="nav-label">Pipelines</span>
+          </button>
+          <button className={`nav-btn ${tab === 'releases' ? 'active' : ''}`} onClick={() => { setTab('releases'); localStorage.setItem(TAB_KEY, 'releases') }} title="Releases">
+            <Icon path={mdiRocketLaunch} size={1} />
+            <span className="nav-label">Releases</span>
+          </button>
+        </nav>
+        <main className="content">
+        {tab === 'boards' && client && <BoardView client={client} project={selectedProject} />}
         {tab === 'pipelines' && client && <PipelineList client={client} project={selectedProject} />}
         {tab === 'releases' && client && <ReleaseList client={client} project={selectedProject} />}
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

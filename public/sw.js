@@ -1,14 +1,6 @@
-const CACHE_NAME = 'cn-devops-v1';
-const PRECACHE_URLS = [
-  './',
-  './index.html',
-  './manifest.json',
-];
+const CACHE_NAME = 'cn-devops-v2';
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
-  );
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
@@ -22,16 +14,39 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network-first strategy — app needs fresh data from Azure DevOps API
-  if (event.request.url.includes('dev.azure.com') || event.request.url.includes('vsrm.dev.azure.com')) {
+  const url = new URL(event.request.url);
+
+  // Network-first for API calls
+  if (url.hostname.includes('dev.azure.com')) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
     );
     return;
   }
 
-  // Cache-first for app shell
+  // Network-first for navigation (index.html) — always get fresh version
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for hashed assets (Vite adds hashes to JS/CSS filenames)
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((res) => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return res;
+      });
+    })
   );
 });

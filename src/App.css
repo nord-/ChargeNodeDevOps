@@ -4,6 +4,12 @@
   min-height: 100svh;
 }
 
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .header {
   background: #1EBE69;
   color: white;
@@ -54,36 +60,52 @@
 
 .nav {
   display: flex;
+  flex-direction: column;
   background: #f0f0f0;
-  border-bottom: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  padding: 8px 0;
+  flex-shrink: 0;
 }
 
 .nav-btn {
-  flex: 1;
-  padding: 10px;
+  padding: 12px;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #555;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
+  border-left: 3px solid transparent;
   transition: all 0.2s;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
+  gap: 2px;
 }
 
 .nav-btn.active {
   color: #1EBE69;
-  border-bottom-color: #1EBE69;
+  border-left-color: #1EBE69;
   background: white;
+}
+
+.nav-label {
+  display: none;
+}
+
+@media (min-width: 600px), (orientation: landscape) {
+  .nav {
+    width: 120px;
+  }
+  .nav-label {
+    display: block;
+  }
 }
 
 .content {
   flex: 1;
   padding: 16px;
+  overflow-y: auto;
 }
 
 .placeholder {
@@ -138,6 +160,13 @@
   transform: rotate(180deg);
 }
 
+.row-chevron {
+  padding: 8px 12px 8px 8px;
+  margin-left: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .btn-fav {
   padding: 8px 4px 8px 12px;
   border: none;
@@ -153,6 +182,54 @@
   color: #f5a623;
 }
 
+.btn-group {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.btn-group .btn-action {
+  border-radius: 0;
+}
+
+.btn-group .btn-action:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.btn-group .btn-action:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.btn-group .btn-action:only-child {
+  border-radius: 6px;
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #e8e8e8;
+  color: #555;
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.btn-action:active {
+  background: #d0d0d0;
+}
+
+.btn-action-primary {
+  background: #1EBE69;
+  color: white;
+}
+
+.btn-action-primary:active {
+  background: #19a85d;
+}
+
 .loading, .error {
   text-align: center;
   margin: 20px 0;
@@ -165,7 +242,7 @@
 @media (prefers-color-scheme: dark) {
   .nav {
     background: #1e1e1e;
-    border-bottom-color: #333;
+    border-right-color: #333;
   }
   .nav-btn {
     color: #aaa;
@@ -181,5 +258,16 @@
   }
   .section-toggle {
     color: #777;
+  }
+  .btn-action {
+    background: #333;
+    color: #aaa;
+  }
+  .btn-action:active {
+    background: #444;
+  }
+  .btn-action-primary {
+    background: #1EBE69;
+    color: white;
   }
 }

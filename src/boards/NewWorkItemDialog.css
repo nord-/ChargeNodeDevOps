@@ -1,0 +1,29 @@
+.wi-new-dialog {
+  max-height: 85svh;
+  overflow-y: auto;
+}
+
+.wi-new-dialog textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.wi-new-dialog textarea:focus {
+  outline: none;
+  border-color: #1EBE69;
+  box-shadow: 0 0 0 2px rgba(30, 190, 105, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .wi-new-dialog textarea {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+}

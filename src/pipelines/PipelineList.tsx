@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Icon } from '@mdi/react'
-import { mdiStar, mdiStarOutline, mdiPlay, mdiChevronDown, mdiRocketLaunch } from '@mdi/js'
+import { mdiStar, mdiStarOutline, mdiPlay, mdiChevronDown, mdiRocketLaunch, mdiRefresh } from '@mdi/js'
 import type { DevOpsClient } from '../api/devops'
 import { listPipelines, listPipelineRuns, runPipeline, type Pipeline, type PipelineRun } from '../api/pipelines'
 import { formatDate } from '../formatDate'
@@ -139,19 +139,25 @@ export function PipelineList({ client, project }: Props) {
             onClick={() => toggleRuns(p.id)}
           >
             <span className="pipeline-name">{p.name}</span>
-            <span className={`expand-icon ${expandedId === p.id ? 'open' : ''}`}><Icon path={mdiChevronDown} size={0.8} /></span>
           </button>
-          <button
-            className="btn-run-small"
-            onClick={e => { e.stopPropagation(); setRunTarget(p) }}
-            title="Run pipeline"
-          >
-            <Icon path={mdiPlay} size={0.9} />
-          </button>
+          <div className="btn-group">
+            <button className="btn-action" onClick={() => loadRuns(p.id)} title="Refresh runs">
+              <Icon path={mdiRefresh} size={0.85} />
+            </button>
+            <button
+              className="btn-action btn-action-primary"
+              onClick={e => { e.stopPropagation(); setRunTarget(p) }}
+              title="Run pipeline"
+            >
+              <Icon path={mdiPlay} size={0.85} />
+            </button>
+          </div>
+          <span className={`expand-icon row-chevron ${expandedId === p.id ? 'open' : ''}`} onClick={() => toggleRuns(p.id)}>
+            <Icon path={mdiChevronDown} size={0.8} />
+          </span>
         </div>
         {expandedId === p.id && (
           <div className="runs-panel">
-            <div className="runs-header">Runs</div>
             {runsLoading && <p className="loading">Loading runs...</p>}
             <ul className="runs">
               {!runsLoading && runs.length === 0 && <li className="run-item muted">No runs found</li>}
