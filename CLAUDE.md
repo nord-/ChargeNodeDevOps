@@ -28,8 +28,8 @@ ChargeNode DevOps — a mobile-friendly PWA for Azure DevOps, built with React +
 
 ### Boards
 - Team and board selectors (persisted per project in localStorage)
-- Swimlane-based layout: expandable lanes with lazy-loaded work items
-- Default lane shows backlog (first column), named lanes show active columns
+- Boards without swimlanes: columns as expandable rows with lazy-loading per column
+- Boards with swimlanes: lane-based layout with backlog lane + named lanes containing column accordion
 - Column accordion: one column expanded at a time, collapsed columns show rotated name
 - Work item cards with type icons (Bug, User Story, Task)
 - Work item dialog: view description, change column/swimlane/assignee
