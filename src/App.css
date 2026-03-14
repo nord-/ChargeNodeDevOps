@@ -48,6 +48,13 @@
   background: white;
 }
 
+@media (prefers-color-scheme: dark) {
+  .project-select-header option {
+    color: #e0e0e0;
+    background: #2d2d2d;
+  }
+}
+
 .disconnect-btn {
   background: rgba(255, 255, 255, 0.2);
   color: white;

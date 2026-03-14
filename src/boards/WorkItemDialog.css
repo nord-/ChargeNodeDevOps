@@ -134,6 +134,9 @@
     border-color: #444;
     color: #e0e0e0;
   }
+  .wi-id {
+    color: #999;
+  }
   .wi-tag {
     background: #333;
     color: #aaa;

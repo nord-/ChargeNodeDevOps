@@ -330,4 +330,17 @@
     background: #b62324;
     color: white;
   }
+  .release-meta {
+    color: #777;
+  }
+  .release-status.canceled {
+    background: #555;
+  }
+  .stage-item.stage-succeeded { border-color: #238636; }
+  .stage-item.stage-failed { border-color: #b62324; }
+  .stage-item.stage-inProgress { border-color: #4edfa0; }
+  .stage-item.stage-canceled { border-color: #555; }
+  .stage-status-text.succeeded { color: #3fb950; }
+  .stage-status-text.failed { color: #f85149; }
+  .stage-status-text.inProgress { color: #4edfa0; }
 }
