@@ -11,7 +11,7 @@
 }
 
 .pipeline-item {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 8px;
   overflow: hidden;
@@ -24,7 +24,7 @@
 .pipeline-row {
   display: flex;
   align-items: center;
-  background: white;
+  background: var(--bg-surface);
 }
 
 .pipeline-toggle {
@@ -41,7 +41,7 @@
 }
 
 .pipeline-toggle:active {
-  background: #f5f5f5;
+  background: var(--bg-hover);
 }
 
 .pipeline-name {
@@ -50,8 +50,8 @@
 
 
 .runs-panel {
-  border-top: 1px solid #e0e0e0;
-  background: #fafafa;
+  border-top: 1px solid var(--border);
+  background: var(--bg-sunken);
 }
 
 .runs-header {
@@ -60,7 +60,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .runs {
@@ -75,7 +75,7 @@
   gap: 10px;
   padding: 10px 16px;
   font-size: 14px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .run-item:last-child {
@@ -89,7 +89,7 @@
   padding: 4px 10px;
   border: none;
   border-radius: 4px;
-  background: #1EBE69;
+  background: var(--brand);
   color: white;
   font-size: 12px;
   font-weight: 600;
@@ -98,11 +98,11 @@
 }
 
 .btn-release:active {
-  background: #19a85d;
+  background: var(--brand-active);
 }
 
 .run-item.muted {
-  color: #999;
+  color: var(--text-faint);
   font-style: italic;
 }
 
@@ -113,11 +113,11 @@
   flex-shrink: 0;
 }
 
-.run-status.succeeded { background: #2da44e; }
-.run-status.failed { background: #cf222e; }
-.run-status.inProgress { background: #1EBE69; }
-.run-status.canceled, .run-status.canceling { background: #888; }
-.run-status.unknown, .run-status.completed { background: #aaa; }
+.run-status.succeeded { background: var(--success); }
+.run-status.failed { background: var(--error); }
+.run-status.inProgress { background: var(--brand); }
+.run-status.canceled, .run-status.canceling { background: var(--text-muted); }
+.run-status.unknown, .run-status.completed { background: var(--text-hint); }
 
 .run-details {
   flex: 1;
@@ -138,13 +138,13 @@
 
 .run-description {
   font-weight: 400;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .run-branch-btn {
   border: none;
   background: transparent;
-  color: #1EBE69;
+  color: var(--brand);
   font-size: inherit;
   font-family: inherit;
   padding: 0;
@@ -155,40 +155,9 @@
 
 .run-meta {
   font-size: 12px;
-  color: #999;
+  color: var(--text-faint);
 }
 
 .run-id {
-  color: #bbb;
-}
-
-@media (prefers-color-scheme: dark) {
-  .pipeline-item {
-    border-color: #333;
-  }
-  .pipeline-row {
-    background: #1e1e1e;
-  }
-  .pipeline-toggle {
-    color: #e0e0e0;
-  }
-  .pipeline-toggle:active {
-    background: #2a2a2a;
-  }
-  .runs-panel {
-    background: #1a1a1a;
-    border-top-color: #333;
-  }
-  .run-item {
-    border-bottom-color: #2a2a2a;
-  }
-  .run-description {
-    color: #999;
-  }
-  .run-meta {
-    color: #777;
-  }
-  .run-id {
-    color: #555;
-  }
+  color: var(--text-hint);
 }

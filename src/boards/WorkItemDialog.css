@@ -18,23 +18,23 @@
 }
 
 .wi-type.wit-bug {
-  background: #ffebe9;
-  color: #cf222e;
+  background: var(--wit-bug-bg);
+  color: var(--wit-bug);
 }
 
 .wi-type.wit-user-story {
-  background: #dbeafe;
-  color: #0078d4;
+  background: var(--wit-story-bg);
+  color: var(--wit-story);
 }
 
 .wi-type.wit-task {
-  background: #fef3cd;
-  color: #b8860b;
+  background: var(--wit-task-bg);
+  color: var(--wit-task-text);
 }
 
 .wi-id {
   font-size: 12px;
-  color: #888;
+  color: var(--text-faint);
 }
 
 .wi-title {
@@ -45,11 +45,11 @@
 
 .wi-description {
   font-size: 13px;
-  color: #555;
+  color: var(--text-secondary);
   line-height: 1.5;
   margin-bottom: 16px;
   padding: 10px 12px;
-  background: #f8f8f8;
+  background: var(--bg-sunken);
   border-radius: 6px;
   overflow: hidden;
   word-break: break-word;
@@ -73,22 +73,23 @@
   gap: 4px;
   font-size: 13px;
   font-weight: 500;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .wi-fields select {
   padding: 8px 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-input);
   border-radius: 6px;
   font-size: 14px;
   font-family: inherit;
-  background: white;
+  background: var(--bg-input);
+  color: var(--text);
 }
 
 .wi-fields select:focus {
   outline: none;
-  border-color: #1EBE69;
-  box-shadow: 0 0 0 2px rgba(30, 190, 105, 0.2);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 .wi-tags {
@@ -102,43 +103,6 @@
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 10px;
-  background: #e8e8e8;
-  color: #555;
-}
-
-@media (prefers-color-scheme: dark) {
-  .wi-type.wit-bug {
-    background: #3a1a1a;
-    color: #f85149;
-  }
-  .wi-type.wit-user-story {
-    background: #1a2a3a;
-    color: #58a6ff;
-  }
-  .wi-type.wit-task {
-    background: #3a2a1a;
-    color: #f5a623;
-  }
-  .wi-title {
-    color: #e0e0e0;
-  }
-  .wi-description {
-    background: #2a2a2a;
-    color: #ccc;
-  }
-  .wi-fields label {
-    color: #aaa;
-  }
-  .wi-fields select {
-    background: #2d2d2d;
-    border-color: #444;
-    color: #e0e0e0;
-  }
-  .wi-id {
-    color: #999;
-  }
-  .wi-tag {
-    background: #333;
-    color: #aaa;
-  }
+  background: var(--bg-badge);
+  color: var(--text-secondary);
 }

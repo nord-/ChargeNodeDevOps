@@ -14,7 +14,7 @@
 .connect-card h2 {
   margin: 0 0 20px;
   font-size: 22px;
-  color: #1EBE69;
+  color: var(--brand);
 }
 
 .connect-card form {
@@ -29,26 +29,28 @@
   gap: 4px;
   font-size: 14px;
   font-weight: 500;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .connect-card input {
   padding: 10px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-input);
   border-radius: 6px;
   font-size: 16px;
   font-family: inherit;
+  background: var(--bg-input);
+  color: var(--text);
 }
 
 .connect-card input:focus {
   outline: none;
-  border-color: #1EBE69;
-  box-shadow: 0 0 0 2px rgba(30, 190, 105, 0.2);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 .connect-card button {
   padding: 12px;
-  background: #1EBE69;
+  background: var(--brand);
   color: white;
   border: none;
   border-radius: 6px;
@@ -63,21 +65,7 @@
 }
 
 .connect-card .error {
-  color: #d32f2f;
+  color: var(--error-text);
   font-size: 14px;
   margin: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .connect-card label {
-    color: #aaa;
-  }
-  .connect-card input {
-    background: #2d2d2d;
-    border-color: #444;
-    color: #e0e0e0;
-  }
-  .connect-card input:focus {
-    border-color: #1EBE69;
-  }
 }

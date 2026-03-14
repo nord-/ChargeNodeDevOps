@@ -11,7 +11,7 @@
 }
 
 .def-item {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 8px;
   overflow: hidden;
@@ -24,7 +24,7 @@
 .def-row {
   display: flex;
   align-items: center;
-  background: white;
+  background: var(--bg-surface);
 }
 
 .def-toggle {
@@ -41,7 +41,7 @@
 }
 
 .def-toggle:active {
-  background: #f5f5f5;
+  background: var(--bg-hover);
 }
 
 .def-name {
@@ -49,8 +49,8 @@
 }
 
 .releases-panel {
-  border-top: 1px solid #e0e0e0;
-  background: #fafafa;
+  border-top: 1px solid var(--border);
+  background: var(--bg-sunken);
 }
 
 .releases {
@@ -60,7 +60,7 @@
 }
 
 .release-item-wrap {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .release-item-wrap:last-child {
@@ -91,11 +91,11 @@
 }
 
 .release-item-btn:active {
-  background: #f0f0f0;
+  background: var(--bg-hover);
 }
 
 .release-item.muted {
-  color: #999;
+  color: var(--text-faint);
   font-style: italic;
   padding: 10px 16px;
 }
@@ -108,11 +108,11 @@
   margin-top: 4px;
 }
 
-.release-status.succeeded { background: #2da44e; }
-.release-status.failed { background: #cf222e; }
-.release-status.inProgress { background: #1EBE69; }
-.release-status.notStarted { background: #ddd; }
-.release-status.canceled { background: #888; }
+.release-status.succeeded { background: var(--success); }
+.release-status.failed { background: var(--error); }
+.release-status.inProgress { background: var(--brand); }
+.release-status.notStarted { background: var(--bg-badge); }
+.release-status.canceled { background: var(--text-muted); }
 
 .release-details {
   flex: 1;
@@ -128,17 +128,17 @@
 
 .release-build {
   font-weight: 400;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .release-branch {
   font-size: 12px;
-  color: #1EBE69;
+  color: var(--brand);
 }
 
 .release-meta {
   font-size: 12px;
-  color: #999;
+  color: var(--text-faint);
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -152,17 +152,17 @@
   font-weight: 600;
 }
 
-.env-badge.succeeded { background: #dafbe1; color: #1a7f37; }
-.env-badge.failed { background: #ffebe9; color: #cf222e; }
-.env-badge.inProgress { background: #d4f5e4; color: #1EBE69; }
-.env-badge.notStarted { background: #f0f0f0; color: #888; }
-.env-badge.canceled { background: #f0f0f0; color: #666; }
+.env-badge.succeeded { background: var(--success-bg); color: var(--success-text); }
+.env-badge.failed { background: var(--error-bg); color: var(--error-text); }
+.env-badge.inProgress { background: var(--success-bg); color: var(--brand); }
+.env-badge.notStarted { background: var(--bg-raised); color: var(--text-muted); }
+.env-badge.canceled { background: var(--bg-raised); color: var(--text-secondary); }
 
 /* Stages panel (expanded release) */
 
 .stages-panel {
-  background: #f5f5f5;
-  border-top: 1px solid #e8e8e8;
+  background: var(--bg-hover);
+  border-top: 1px solid var(--bg-badge);
   padding: 8px 12px;
 }
 
@@ -181,17 +181,17 @@
   align-items: center;
   gap: 6px;
   padding: 10px 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: white;
+  background: var(--bg-surface);
   min-width: 90px;
   flex: 1 1 0;
 }
 
-.stage-item.stage-succeeded { border-color: #2da44e; }
-.stage-item.stage-failed { border-color: #cf222e; }
-.stage-item.stage-inProgress { border-color: #1EBE69; }
-.stage-item.stage-canceled { border-color: #888; }
+.stage-item.stage-succeeded { border-color: var(--success); }
+.stage-item.stage-failed { border-color: var(--error-text); }
+.stage-item.stage-inProgress { border-color: var(--brand); }
+.stage-item.stage-canceled { border-color: var(--text-muted); }
 
 .stage-name {
   font-size: 12px;
@@ -202,12 +202,12 @@
 
 .stage-status-text {
   font-size: 11px;
-  color: #888;
+  color: var(--text-muted);
 }
 
-.stage-status-text.succeeded { color: #1a7f37; }
-.stage-status-text.failed { color: #cf222e; }
-.stage-status-text.inProgress { color: #1EBE69; }
+.stage-status-text.succeeded { color: var(--success-text); }
+.stage-status-text.failed { color: var(--error-text); }
+.stage-status-text.inProgress { color: var(--brand); }
 
 .stage-actions {
   display: flex;
@@ -227,12 +227,12 @@
 }
 
 .btn-approve {
-  background: #2da44e;
+  background: var(--success);
   color: white;
 }
 
 .btn-approve:active {
-  background: #248c3e;
+  opacity: 0.85;
 }
 
 .btn-approve:disabled,
@@ -242,12 +242,12 @@
 }
 
 .btn-reject {
-  background: #cf222e;
+  background: var(--error);
   color: white;
 }
 
 .btn-reject:active {
-  background: #b01c26;
+  opacity: 0.85;
 }
 
 .btn-deploy {
@@ -257,7 +257,7 @@
   padding: 4px 10px;
   border: none;
   border-radius: 6px;
-  background: #1EBE69;
+  background: var(--brand);
   color: white;
   font-size: 12px;
   font-weight: 600;
@@ -266,81 +266,10 @@
 }
 
 .btn-deploy:active {
-  background: #19a85d;
+  background: var(--brand-active);
 }
 
 .btn-deploy:disabled {
   opacity: 0.5;
   cursor: default;
-}
-
-@media (prefers-color-scheme: dark) {
-  .def-item {
-    border-color: #333;
-  }
-  .def-row {
-    background: #1e1e1e;
-  }
-  .def-toggle {
-    color: #e0e0e0;
-  }
-  .def-toggle:active {
-    background: #2a2a2a;
-  }
-  .releases-panel {
-    background: #1a1a1a;
-    border-top-color: #333;
-  }
-  .release-item-wrap {
-    border-bottom-color: #2a2a2a;
-  }
-  .release-item-btn {
-    color: #e0e0e0;
-  }
-  .release-item-btn:active {
-    background: #2a2a2a;
-  }
-  .release-build { color: #999; }
-  .release-branch { color: #4edfa0; }
-  .release-status.notStarted { background: #444; }
-  .env-badge.succeeded { background: #1a3a24; color: #3fb950; }
-  .env-badge.failed { background: #3a1a1a; color: #f85149; }
-  .env-badge.inProgress { background: #1a3a2a; color: #4edfa0; }
-  .env-badge.notStarted { background: #2a2a2a; color: #777; }
-  .env-badge.canceled { background: #2a2a2a; color: #777; }
-  .stages-panel {
-    background: #161616;
-    border-top-color: #333;
-  }
-  .stage-item {
-    background: #1e1e1e;
-    border-color: #333;
-  }
-  .stage-name {
-    color: #e0e0e0;
-  }
-  .stage-status-text {
-    color: #777;
-  }
-  .btn-approve {
-    background: #238636;
-    color: white;
-  }
-  .btn-reject {
-    background: #b62324;
-    color: white;
-  }
-  .release-meta {
-    color: #777;
-  }
-  .release-status.canceled {
-    background: #555;
-  }
-  .stage-item.stage-succeeded { border-color: #238636; }
-  .stage-item.stage-failed { border-color: #b62324; }
-  .stage-item.stage-inProgress { border-color: #4edfa0; }
-  .stage-item.stage-canceled { border-color: #555; }
-  .stage-status-text.succeeded { color: #3fb950; }
-  .stage-status-text.failed { color: #f85149; }
-  .stage-status-text.inProgress { color: #4edfa0; }
 }
