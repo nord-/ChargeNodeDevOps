@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiClose } from '@mdi/js'
 import type { DevOpsClient } from '../api/devops'
-import { updateWorkItem, listTeamMembers, type WorkItem, type Board } from '../api/boards'
+import { updateWorkItem, getWorkItems, listTeamMembers, type WorkItem, type Board } from '../api/boards'
 import './WorkItemDialog.css'
 
 interface Props {
@@ -42,6 +42,11 @@ export function WorkItemDialog({ client, project, team, item, board, onClose, on
     lane !== (item.fields['System.BoardLane'] ?? '') ||
     assignedTo !== (item.fields['System.AssignedTo']?.uniqueName ?? '')
 
+  // Find the writable WEF_*_Kanban.Column field (System.BoardColumn is read-only)
+  const kanbanColumnField = Object.keys(item.fields).find(k => /Kanban\.Column$/.test(k) && k !== 'System.BoardColumn')
+  // Derive lane field from column field (same WEF_ prefix, e.g. WEF_xxx_Kanban.Lane)
+  const kanbanLaneField = kanbanColumnField?.replace(/Kanban\.Column$/, 'Kanban.Lane')
+
   async function handleSave() {
     if (!hasChanges) return
     setSaving(true)
@@ -49,15 +54,28 @@ export function WorkItemDialog({ client, project, team, item, board, onClose, on
     try {
       const fields: Record<string, string> = {}
       if (column !== (item.fields['System.BoardColumn'] ?? '')) {
-        fields['System.BoardColumn'] = column
+        // Update state if it differs between columns
+        const targetCol = board.columns.find(c => c.name === column)
+        const wiType = item.fields['System.WorkItemType']
+        const newState = targetCol?.stateMappings[wiType]
+        const currentState = item.fields['System.State']
+        if (newState && newState !== currentState) {
+          fields['System.State'] = newState
+        }
+        // Update the writable kanban column field for same-state moves
+        if (kanbanColumnField) {
+          fields[kanbanColumnField] = column
+        }
       }
-      if (lane !== (item.fields['System.BoardLane'] ?? '')) {
-        fields['System.BoardLane'] = lane
+      if (lane !== (item.fields['System.BoardLane'] ?? '') && kanbanLaneField) {
+        fields[kanbanLaneField] = lane
       }
       if (assignedTo !== (item.fields['System.AssignedTo']?.uniqueName ?? '')) {
         fields['System.AssignedTo'] = assignedTo
       }
-      const updated = await updateWorkItem(client, project, team, item.id, fields)
+      await updateWorkItem(client, project, item.id, fields)
+      // Re-fetch with $expand=all to get WEF fields for future edits
+      const [updated] = await getWorkItems(client, project, [item.id])
       onUpdated(updated)
     } catch {
       setError('Failed to update work item')

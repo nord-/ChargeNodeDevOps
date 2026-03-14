@@ -36,7 +36,13 @@ export interface WorkItem {
     'System.BoardLane'?: string
     'System.Tags'?: string
     'Microsoft.VSTS.Common.Priority'?: number
+    [key: string]: unknown
   }
+}
+
+export interface TeamRef {
+  id: string
+  name: string
 }
 
 interface WiqlResult {
@@ -48,28 +54,40 @@ interface WorkItemBatchResult {
   count: number
 }
 
-interface BoardListResult {
-  value: BoardRef[]
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function esc(value: string): string {
+  return value.replace(/'/g, "''")
 }
 
-export interface TeamRef {
-  id: string
-  name: string
+function wiqlPath(project: string, team: string): string {
+  return `${project}/${team}/_apis/wit/wiql?api-version=7.1`
 }
 
-interface TeamListResult {
-  value: TeamRef[]
+function baseConditions(project: string, allowedTypes: string[] = []): string {
+  let sql = `[System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${esc(project)}'`
+  if (allowedTypes.length > 0) {
+    sql += ` AND [System.WorkItemType] IN (${allowedTypes.map(t => `'${esc(t)}'`).join(',')})`
+  }
+  return sql
 }
+
+async function runWiql(client: DevOpsClient, project: string, team: string, query: string): Promise<number[]> {
+  const res = await client.post<WiqlResult>(wiqlPath(project, team), { query })
+  return res.workItems.map(w => w.id)
+}
+
+// ── Teams & Boards ───────────────────────────────────────────────────
 
 export async function listTeams(client: DevOpsClient, project: string): Promise<TeamRef[]> {
-  const res = await client.get<TeamListResult>(
+  const res = await client.get<{ value: TeamRef[] }>(
     `_apis/projects/${encodeURIComponent(project)}/teams?api-version=7.1`
   )
   return res.value
 }
 
 export async function listBoards(client: DevOpsClient, project: string, team: string): Promise<BoardRef[]> {
-  const res = await client.get<BoardListResult>(
+  const res = await client.get<{ value: BoardRef[] }>(
     `${project}/${team}/_apis/work/boards?api-version=7.1`
   )
   return res.value
@@ -81,70 +99,55 @@ export async function getBoard(client: DevOpsClient, project: string, team: stri
   )
 }
 
-function typeFilter(types: string[]): string {
-  if (types.length === 0) return ''
-  return ` AND [System.WorkItemType] IN (${types.map(t => `'${t}'`).join(',')})`
+export async function listTeamMembers(client: DevOpsClient, project: string, team: string): Promise<{ displayName: string; uniqueName: string }[]> {
+  const res = await client.get<{ value: { identity: { displayName: string; uniqueName: string } }[] }>(
+    `_apis/projects/${encodeURIComponent(project)}/teams/${encodeURIComponent(team)}/members?api-version=7.1`
+  )
+  return res.value.map(m => m.identity)
 }
 
+// ── WIQL Queries ─────────────────────────────────────────────────────
+
 export async function queryLaneItems(client: DevOpsClient, project: string, team: string, lane: string | null, allowedTypes: string[] = []): Promise<number[]> {
-  const laneFilter = lane
-    ? `[System.BoardLane] = '${lane}'`
-    : `[System.BoardLane] = ''`
-  const wiql = `SELECT [System.Id] FROM WorkItems WHERE ${laneFilter} AND [System.BoardColumn] <> '' AND [System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${project}'${typeFilter(allowedTypes)} ORDER BY [Microsoft.VSTS.Common.BacklogPriority] ASC`
-  const res = await client.post<WiqlResult>(
-    `${project}/${team}/_apis/wit/wiql?api-version=7.1`,
-    { query: wiql },
-  )
-  return res.workItems.map(w => w.id)
+  const laneFilter = lane ? `[System.BoardLane] = '${esc(lane)}'` : `[System.BoardLane] = ''`
+  const wiql = `SELECT [System.Id] FROM WorkItems WHERE ${laneFilter} AND [System.BoardColumn] <> '' AND ${baseConditions(project, allowedTypes)} ORDER BY [Microsoft.VSTS.Common.BacklogPriority] ASC`
+  return runWiql(client, project, team, wiql)
 }
 
 export async function queryLaneCounts(client: DevOpsClient, project: string, team: string, lanes: (string | null)[], allowedTypes: string[] = []): Promise<Record<string, number>> {
+  const base = baseConditions(project, allowedTypes)
   const counts: Record<string, number> = {}
   await Promise.all(lanes.map(async lane => {
-    const laneFilter = lane
-      ? `[System.BoardLane] = '${lane}'`
-      : `[System.BoardLane] = ''`
-    const wiql = `SELECT [System.Id] FROM WorkItems WHERE ${laneFilter} AND [System.BoardColumn] <> '' AND [System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${project}'${typeFilter(allowedTypes)}`
-    const res = await client.post<WiqlResult>(
-      `${project}/${team}/_apis/wit/wiql?api-version=7.1`,
-      { query: wiql },
-    )
-    counts[lane ?? ''] = res.workItems.length
+    const laneFilter = lane ? `[System.BoardLane] = '${esc(lane)}'` : `[System.BoardLane] = ''`
+    const wiql = `SELECT [System.Id] FROM WorkItems WHERE ${laneFilter} AND [System.BoardColumn] <> '' AND ${base}`
+    const ids = await runWiql(client, project, team, wiql)
+    counts[lane ?? ''] = ids.length
   }))
   return counts
 }
 
 export async function queryColumnItems(client: DevOpsClient, project: string, team: string, column: string, allowedTypes: string[] = []): Promise<number[]> {
-  const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.BoardColumn] = '${column}' AND [System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${project}'${typeFilter(allowedTypes)} ORDER BY [Microsoft.VSTS.Common.BacklogPriority] ASC`
-  const res = await client.post<WiqlResult>(
-    `${project}/${team}/_apis/wit/wiql?api-version=7.1`,
-    { query: wiql },
-  )
-  return res.workItems.map(w => w.id)
+  const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.BoardColumn] = '${esc(column)}' AND ${baseConditions(project, allowedTypes)} ORDER BY [Microsoft.VSTS.Common.BacklogPriority] ASC`
+  return runWiql(client, project, team, wiql)
 }
 
 export async function queryColumnCounts(client: DevOpsClient, project: string, team: string, columns: string[], allowedTypes: string[] = []): Promise<Record<string, number>> {
+  const base = baseConditions(project, allowedTypes)
   const counts: Record<string, number> = {}
   await Promise.all(columns.map(async col => {
-    const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.BoardColumn] = '${col}' AND [System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${project}'${typeFilter(allowedTypes)}`
-    const res = await client.post<WiqlResult>(
-      `${project}/${team}/_apis/wit/wiql?api-version=7.1`,
-      { query: wiql },
-    )
-    counts[col] = res.workItems.length
+    const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.BoardColumn] = '${esc(col)}' AND ${base}`
+    const ids = await runWiql(client, project, team, wiql)
+    counts[col] = ids.length
   }))
   return counts
 }
 
 export async function searchWorkItems(client: DevOpsClient, project: string, team: string, text: string): Promise<number[]> {
-  const escaped = text.replace(/'/g, "''")
-  const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.Title] CONTAINS '${escaped}' AND [System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${project}' ORDER BY [Microsoft.VSTS.Common.BacklogPriority] ASC`
-  const res = await client.post<WiqlResult>(
-    `${project}/${team}/_apis/wit/wiql?api-version=7.1`,
-    { query: wiql },
-  )
-  return res.workItems.map(w => w.id)
+  const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.Title] CONTAINS '${esc(text)}' AND ${baseConditions(project)} ORDER BY [Microsoft.VSTS.Common.BacklogPriority] ASC`
+  return runWiql(client, project, team, wiql)
 }
+
+// ── Work Items CRUD ──────────────────────────────────────────────────
 
 export async function getWorkItems(client: DevOpsClient, project: string, ids: number[]): Promise<WorkItem[]> {
   if (ids.length === 0) return []
@@ -179,7 +182,6 @@ export async function createWorkItem(
 export async function updateWorkItem(
   client: DevOpsClient,
   project: string,
-  team: string,
   id: number,
   fields: Record<string, string>,
 ): Promise<WorkItem> {
@@ -189,14 +191,7 @@ export async function updateWorkItem(
     value,
   }))
   return client.jsonPatch<WorkItem>(
-    `${project}/${team}/_apis/wit/workitems/${id}?api-version=7.1`,
+    `${project}/_apis/wit/workitems/${id}?api-version=7.1`,
     ops,
   )
-}
-
-export async function listTeamMembers(client: DevOpsClient, project: string, team: string): Promise<{ displayName: string; uniqueName: string }[]> {
-  const res = await client.get<{ value: { identity: { displayName: string; uniqueName: string } }[] }>(
-    `_apis/projects/${encodeURIComponent(project)}/teams/${encodeURIComponent(team)}/members?api-version=7.1`
-  )
-  return res.value.map(m => m.identity)
 }

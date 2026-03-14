@@ -252,17 +252,58 @@ export function BoardView({ client, project }: Props) {
 
   function handleItemUpdated(updated: WorkItem) {
     if (hasSwimLanes) {
-      const lk = updated.fields['System.BoardLane'] ?? ''
-      setLaneItems(prev => ({
-        ...prev,
-        [lk]: (prev[lk] ?? []).map(i => i.id === updated.id ? updated : i),
-      }))
+      const newLane = updated.fields['System.BoardLane'] ?? ''
+      setLaneItems(prev => {
+        const next = { ...prev }
+        // Remove from all lanes
+        for (const key of Object.keys(next)) {
+          next[key] = next[key].filter(i => i.id !== updated.id)
+        }
+        // Add to target lane (only if it was already loaded)
+        if (next[newLane]) {
+          next[newLane] = [...next[newLane], updated]
+        } else {
+          // Not loaded yet — invalidate so it reloads on expand
+          delete next[newLane]
+        }
+        return next
+      })
+      setLaneCounts(prev => {
+        const counts = { ...prev }
+        for (const [key, items] of Object.entries(laneItems)) {
+          if (items.some(i => i.id === updated.id) && key !== newLane) {
+            counts[key] = Math.max(0, (counts[key] ?? 0) - 1)
+            counts[newLane] = (counts[newLane] ?? 0) + 1
+            break
+          }
+        }
+        return counts
+      })
     } else {
-      const col = updated.fields['System.BoardColumn'] ?? ''
-      setColumnItems(prev => ({
-        ...prev,
-        [col]: (prev[col] ?? []).map(i => i.id === updated.id ? updated : i),
-      }))
+      const newCol = updated.fields['System.BoardColumn'] ?? ''
+      setColumnItems(prev => {
+        const next = { ...prev }
+        for (const key of Object.keys(next)) {
+          next[key] = next[key].filter(i => i.id !== updated.id)
+        }
+        if (next[newCol]) {
+          next[newCol] = [...next[newCol], updated]
+        } else {
+          delete next[newCol]
+        }
+        return next
+      })
+      setColumnCounts(prev => {
+        const counts = { ...prev }
+        for (const [key, items] of Object.entries(columnItems)) {
+          if (items.some(i => i.id === updated.id) && key !== newCol) {
+            counts[key] = Math.max(0, (counts[key] ?? 0) - 1)
+            counts[newCol] = (counts[newCol] ?? 0) + 1
+            break
+          }
+        }
+        return counts
+      })
     }
     setSelectedItem(updated)
   }
