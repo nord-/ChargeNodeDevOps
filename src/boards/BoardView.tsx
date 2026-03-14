@@ -137,6 +137,8 @@ export function BoardView({ client, project }: Props) {
       const swimLanes = namedRows.length > 0
       setHasSwimLanes(swimLanes)
 
+      const allowedTypes = [...new Set(b.columns.flatMap(c => Object.keys(c.stateMappings)))]
+
       if (swimLanes) {
         const hasDefault = b.rows.some(r => r.name === null)
         if (!hasDefault) {
@@ -144,13 +146,13 @@ export function BoardView({ client, project }: Props) {
         }
         setBoard(b)
         const laneNames = b.rows.map(r => r.name)
-        const counts = await queryLaneCounts(client, project, team, laneNames)
+        const counts = await queryLaneCounts(client, project, team, laneNames, allowedTypes)
         setLaneCounts(counts)
       } else {
         setBoard(b)
         // Skip last column (Done/Closed)
         const colNames = b.columns.slice(0, -1).map(c => c.name)
-        const counts = await queryColumnCounts(client, project, team, colNames)
+        const counts = await queryColumnCounts(client, project, team, colNames, allowedTypes)
         setColumnCounts(counts)
       }
     } catch {
@@ -168,11 +170,16 @@ export function BoardView({ client, project }: Props) {
     return row.name ?? ''
   }
 
+  function boardTypes(): string[] {
+    if (!board) return []
+    return [...new Set(board.columns.flatMap(c => Object.keys(c.stateMappings)))]
+  }
+
   async function loadLane(row: { name: string | null }) {
     const key = laneKey(row)
     setLoadingLanes(prev => new Set(prev).add(key))
     try {
-      const ids = await queryLaneItems(client, project, team, row.name)
+      const ids = await queryLaneItems(client, project, team, row.name, boardTypes())
       const wi = ids.length > 0 ? await getWorkItems(client, project, ids) : []
       setLaneItems(prev => ({ ...prev, [key]: wi }))
     } catch {
@@ -218,7 +225,7 @@ export function BoardView({ client, project }: Props) {
   async function loadColumn(colName: string) {
     setLoadingCols(prev => new Set(prev).add(colName))
     try {
-      const ids = await queryColumnItems(client, project, team, colName)
+      const ids = await queryColumnItems(client, project, team, colName, boardTypes())
       const wi = ids.length > 0 ? await getWorkItems(client, project, ids) : []
       setColumnItems(prev => ({ ...prev, [colName]: wi }))
     } catch {
