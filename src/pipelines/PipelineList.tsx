@@ -12,7 +12,9 @@ export function PipelineList() {
   const client = useMemo(() => auth ? createClient(auth.organization, auth.token) : null, [auth])
 
   const [projects, setProjects] = useState<Project[]>([])
-  const [selectedProject, setSelectedProject] = useState('')
+  const [selectedProject, setSelectedProject] = useState(
+    () => localStorage.getItem('cn-devops-project') ?? ''
+  )
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [runs, setRuns] = useState<PipelineRun[]>([])
@@ -26,7 +28,9 @@ export function PipelineList() {
     if (!client) return
     listProjects(client).then(p => {
       setProjects(p)
-      if (p.length > 0) setSelectedProject(p[0].name)
+      const saved = localStorage.getItem('cn-devops-project')
+      const match = saved && p.some(proj => proj.name === saved)
+      if (!match && p.length > 0) setSelectedProject(p[0].name)
     }).catch(() => setError('Failed to load projects'))
   }, [client])
 
@@ -77,7 +81,10 @@ export function PipelineList() {
       <div className="project-selector">
         <select
           value={selectedProject}
-          onChange={e => setSelectedProject(e.target.value)}
+          onChange={e => {
+            setSelectedProject(e.target.value)
+            localStorage.setItem('cn-devops-project', e.target.value)
+          }}
         >
           {projects.map(p => (
             <option key={p.id} value={p.name}>{p.name}</option>
