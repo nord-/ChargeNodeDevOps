@@ -179,6 +179,7 @@ export async function createWorkItem(
 export async function updateWorkItem(
   client: DevOpsClient,
   project: string,
+  team: string,
   id: number,
   fields: Record<string, string>,
 ): Promise<WorkItem> {
@@ -188,7 +189,7 @@ export async function updateWorkItem(
     value,
   }))
   return client.jsonPatch<WorkItem>(
-    `${project}/_apis/wit/workitems/${id}?api-version=7.1`,
+    `${project}/${team}/_apis/wit/workitems/${id}?api-version=7.1`,
     ops,
   )
 }

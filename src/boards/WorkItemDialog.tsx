@@ -57,7 +57,7 @@ export function WorkItemDialog({ client, project, team, item, board, onClose, on
       if (assignedTo !== (item.fields['System.AssignedTo']?.uniqueName ?? '')) {
         fields['System.AssignedTo'] = assignedTo
       }
-      const updated = await updateWorkItem(client, project, item.id, fields)
+      const updated = await updateWorkItem(client, project, team, item.id, fields)
       onUpdated(updated)
     } catch {
       setError('Failed to update work item')
