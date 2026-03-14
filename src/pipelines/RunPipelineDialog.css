@@ -18,8 +18,20 @@
 }
 
 .dialog h3 {
-  margin: 0 0 16px;
+  margin: 0 0 4px;
   font-size: 18px;
+}
+
+.dialog-subtitle {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #888;
+}
+
+.dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .dialog label {
@@ -29,6 +41,32 @@
   font-size: 14px;
   font-weight: 500;
   color: #555;
+}
+
+.dialog select {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  font-family: inherit;
+  background: white;
+}
+
+.dialog select:focus {
+  outline: none;
+  border-color: #0078d4;
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+.release-success {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.release-success p {
+  color: #2da44e;
+  font-weight: 600;
+  margin: 0 0 16px;
 }
 
 .dialog input {
@@ -93,7 +131,7 @@
   .dialog label {
     color: #aaa;
   }
-  .dialog input {
+  .dialog input, .dialog select {
     background: #2d2d2d;
     border-color: #444;
     color: #e0e0e0;

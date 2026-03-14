@@ -4,6 +4,7 @@ import { createClient } from '../api/devops'
 import { listProjects, type Project } from '../api/projects'
 import { listPipelines, listPipelineRuns, type Pipeline, type PipelineRun } from '../api/pipelines'
 import { RunPipelineDialog } from './RunPipelineDialog'
+import { CreateReleaseDialog } from './CreateReleaseDialog'
 import './PipelineList.css'
 
 export function PipelineList() {
@@ -15,9 +16,11 @@ export function PipelineList() {
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [runs, setRuns] = useState<PipelineRun[]>([])
+  const [runsLoading, setRunsLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [runTarget, setRunTarget] = useState<Pipeline | null>(null)
+  const [releaseRun, setReleaseRun] = useState<PipelineRun | null>(null)
 
   useEffect(() => {
     if (!client) return
@@ -42,15 +45,18 @@ export function PipelineList() {
   const loadRuns = useCallback(async (pipelineId: number) => {
     if (!client) return
     setRuns([])
+    setRunsLoading(true)
     try {
       const r = await listPipelineRuns(client, selectedProject, pipelineId)
       setRuns(r)
     } catch {
       setRuns([])
+    } finally {
+      setRunsLoading(false)
     }
   }, [client, selectedProject])
 
-  async function toggleRuns(pipelineId: number) {
+  function toggleRuns(pipelineId: number) {
     if (expandedId === pipelineId) {
       setExpandedId(null)
       return
@@ -102,21 +108,32 @@ export function PipelineList() {
               </button>
             </div>
             {expandedId === p.id && (
-              <ul className="runs">
-                {runs.length === 0 && <li className="run-item muted">No recent runs</li>}
-                {runs.slice(0, 5).map(r => (
-                  <li key={r.id} className="run-item">
-                    <span className={`run-status ${r.result ?? r.state}`} />
-                    <span className="run-name">#{r.id}</span>
-                    <span className="run-info">
-                      {r.result ?? r.state}
-                    </span>
-                    <span className="run-date">
-                      {new Date(r.createdDate).toLocaleDateString()}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <div className="runs-panel">
+                <div className="runs-header">Runs</div>
+                {runsLoading && <p className="loading">Loading runs...</p>}
+                <ul className="runs">
+                  {!runsLoading && runs.length === 0 && <li className="run-item muted">No runs found</li>}
+                  {runs.map(r => (
+                    <li key={r.id} className="run-item">
+                      <span className={`run-status ${r.result ?? r.state}`} />
+                      <span className="run-name">#{r.id}</span>
+                      <span className="run-info">{r.result ?? r.state}</span>
+                      <span className="run-date">
+                        {new Date(r.createdDate).toLocaleDateString()}
+                      </span>
+                      {r.result === 'succeeded' && (
+                        <button
+                          className="btn-release"
+                          onClick={() => setReleaseRun(r)}
+                          title="Create release from this run"
+                        >
+                          Release
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </li>
         ))}
@@ -130,6 +147,15 @@ export function PipelineList() {
           pipelineName={runTarget.name}
           onClose={() => setRunTarget(null)}
           onStarted={handleRunStarted}
+        />
+      )}
+
+      {releaseRun && client && (
+        <CreateReleaseDialog
+          client={client}
+          project={selectedProject}
+          run={releaseRun}
+          onClose={() => setReleaseRun(null)}
         />
       )}
     </div>
