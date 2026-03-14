@@ -109,6 +109,28 @@ export async function queryLaneCounts(client: DevOpsClient, project: string, tea
   return counts
 }
 
+export async function queryColumnItems(client: DevOpsClient, project: string, team: string, column: string): Promise<number[]> {
+  const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.BoardColumn] = '${column}' AND [System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${project}' ORDER BY [Microsoft.VSTS.Common.BacklogPriority] ASC`
+  const res = await client.post<WiqlResult>(
+    `${project}/${team}/_apis/wit/wiql?api-version=7.1`,
+    { query: wiql },
+  )
+  return res.workItems.map(w => w.id)
+}
+
+export async function queryColumnCounts(client: DevOpsClient, project: string, team: string, columns: string[]): Promise<Record<string, number>> {
+  const counts: Record<string, number> = {}
+  await Promise.all(columns.map(async col => {
+    const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.BoardColumn] = '${col}' AND [System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${project}'`
+    const res = await client.post<WiqlResult>(
+      `${project}/${team}/_apis/wit/wiql?api-version=7.1`,
+      { query: wiql },
+    )
+    counts[col] = res.workItems.length
+  }))
+  return counts
+}
+
 export async function searchWorkItems(client: DevOpsClient, project: string, team: string, text: string): Promise<number[]> {
   const escaped = text.replace(/'/g, "''")
   const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.Title] CONTAINS '${escaped}' AND [System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${project}' ORDER BY [Microsoft.VSTS.Common.BacklogPriority] ASC`

@@ -8,6 +8,8 @@ import {
   getBoard,
   queryLaneItems,
   queryLaneCounts,
+  queryColumnItems,
+  queryColumnCounts,
   searchWorkItems,
   getWorkItems,
   type TeamRef,
@@ -33,17 +35,45 @@ const WIT_ICONS: Record<string, string> = {
 const TEAM_KEY = (p: string) => `cn-devops-board-team-${p}`
 const BOARD_KEY = (p: string) => `cn-devops-board-name-${p}`
 
+function renderCard(item: WorkItem, onClick: () => void) {
+  return (
+    <li key={item.id} className="board-card" onClick={onClick}>
+      <Icon
+        path={WIT_ICONS[item.fields['System.WorkItemType']] ?? mdiCardText}
+        size={0.7}
+        className={`wit-icon wit-${item.fields['System.WorkItemType'].toLowerCase().replace(/\s/g, '-')}`}
+      />
+      <div className="card-details">
+        <span className="card-title">{item.fields['System.Title']}</span>
+        {item.fields['System.AssignedTo'] && (
+          <span className="card-meta">{item.fields['System.AssignedTo'].displayName}</span>
+        )}
+      </div>
+    </li>
+  )
+}
+
 export function BoardView({ client, project }: Props) {
   const [teams, setTeams] = useState<TeamRef[]>([])
   const [team, setTeam] = useState('')
   const [boards, setBoards] = useState<BoardRef[]>([])
   const [boardName, setBoardName] = useState('')
   const [board, setBoard] = useState<Board | null>(null)
+  const [hasSwimLanes, setHasSwimLanes] = useState(false)
+
+  // Lane mode state (boards with swimlanes)
   const [laneCounts, setLaneCounts] = useState<Record<string, number>>({})
   const [laneItems, setLaneItems] = useState<Record<string, WorkItem[]>>({})
   const [expandedLanes, setExpandedLanes] = useState<Set<string>>(new Set())
   const [activeCol, setActiveCol] = useState<Record<string, string>>({})
   const [loadingLanes, setLoadingLanes] = useState<Set<string>>(new Set())
+
+  // Column mode state (boards without swimlanes)
+  const [columnCounts, setColumnCounts] = useState<Record<string, number>>({})
+  const [columnItems, setColumnItems] = useState<Record<string, WorkItem[]>>({})
+  const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set())
+  const [loadingCols, setLoadingCols] = useState<Set<string>>(new Set())
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null)
@@ -66,8 +96,7 @@ export function BoardView({ client, project }: Props) {
   useEffect(() => {
     if (!project) return
     setTeams([]); setTeam(''); setBoards([]); setBoardName('')
-    setBoard(null); setLaneCounts({}); setLaneItems({})
-    setExpandedLanes(new Set()); setActiveCol({})
+    setBoard(null)
     listTeams(client, project).then(t => {
       setTeams(t)
       if (t.length > 0) {
@@ -82,8 +111,6 @@ export function BoardView({ client, project }: Props) {
   useEffect(() => {
     if (!team) return
     setBoards([]); setBoardName(''); setBoard(null)
-    setLaneCounts({}); setLaneItems({})
-    setExpandedLanes(new Set()); setActiveCol({})
     listBoards(client, project, team).then(b => {
       setBoards(b)
       if (b.length > 0) {
@@ -95,21 +122,37 @@ export function BoardView({ client, project }: Props) {
     }).catch(() => setError('Failed to load boards'))
   }, [client, project, team])
 
+  function resetState() {
+    setLaneCounts({}); setLaneItems({}); setExpandedLanes(new Set()); setActiveCol({}); setLoadingLanes(new Set())
+    setColumnCounts({}); setColumnItems({}); setExpandedCols(new Set()); setLoadingCols(new Set())
+  }
+
   const loadBoard = useCallback(async () => {
     if (!boardName || !team) return
     setLoading(true); setError('')
-    setLaneItems({}); setExpandedLanes(new Set()); setActiveCol({})
+    resetState()
     try {
       const b = await getBoard(client, project, team, boardName)
-      // Ensure a default (null) lane always exists
-      const hasDefault = b.rows.some(r => r.name === null)
-      if (!hasDefault) {
-        b.rows.unshift({ id: '__default__', name: null })
+      const namedRows = b.rows.filter(r => r.name !== null)
+      const swimLanes = namedRows.length > 0
+      setHasSwimLanes(swimLanes)
+
+      if (swimLanes) {
+        const hasDefault = b.rows.some(r => r.name === null)
+        if (!hasDefault) {
+          b.rows.unshift({ id: '__default__', name: null })
+        }
+        setBoard(b)
+        const laneNames = b.rows.map(r => r.name)
+        const counts = await queryLaneCounts(client, project, team, laneNames)
+        setLaneCounts(counts)
+      } else {
+        setBoard(b)
+        // Skip last column (Done/Closed)
+        const colNames = b.columns.slice(0, -1).map(c => c.name)
+        const counts = await queryColumnCounts(client, project, team, colNames)
+        setColumnCounts(counts)
       }
-      setBoard(b)
-      const laneNames = b.rows.map(r => r.name)
-      const counts = await queryLaneCounts(client, project, team, laneNames)
-      setLaneCounts(counts)
     } catch {
       setError('Failed to load board')
     } finally {
@@ -118,6 +161,8 @@ export function BoardView({ client, project }: Props) {
   }, [client, project, team, boardName])
 
   useEffect(() => { loadBoard() }, [loadBoard])
+
+  // --- Lane mode helpers ---
 
   function laneKey(row: { name: string | null }) {
     return row.name ?? ''
@@ -131,7 +176,7 @@ export function BoardView({ client, project }: Props) {
       const wi = ids.length > 0 ? await getWorkItems(client, project, ids) : []
       setLaneItems(prev => ({ ...prev, [key]: wi }))
     } catch {
-      setError(`Failed to load lane`)
+      setError('Failed to load lane')
     } finally {
       setLoadingLanes(prev => { const n = new Set(prev); n.delete(key); return n })
     }
@@ -158,22 +203,9 @@ export function BoardView({ client, project }: Props) {
     }))
   }
 
-  function handleItemUpdated(updated: WorkItem) {
-    const lk = updated.fields['System.BoardLane'] ?? ''
-    setLaneItems(prev => ({
-      ...prev,
-      [lk]: (prev[lk] ?? []).map(i => i.id === updated.id ? updated : i),
-    }))
-    setSelectedItem(updated)
-  }
-
   function columnsForLane(isDefault: boolean) {
     if (!board) return []
-    if (isDefault) {
-      // Default lane: only first column (last is Done/Closed, already filtered)
-      return board.columns.slice(0, 1)
-    }
-    // Named lanes: skip first and last columns
+    if (isDefault) return board.columns.slice(0, 1)
     return board.columns.slice(1, -1)
   }
 
@@ -181,12 +213,58 @@ export function BoardView({ client, project }: Props) {
     return allItems.filter(i => i.fields['System.BoardColumn'] === colName)
   }
 
+  // --- Column mode helpers ---
+
+  async function loadColumn(colName: string) {
+    setLoadingCols(prev => new Set(prev).add(colName))
+    try {
+      const ids = await queryColumnItems(client, project, team, colName)
+      const wi = ids.length > 0 ? await getWorkItems(client, project, ids) : []
+      setColumnItems(prev => ({ ...prev, [colName]: wi }))
+    } catch {
+      setError(`Failed to load ${colName}`)
+    } finally {
+      setLoadingCols(prev => { const n = new Set(prev); n.delete(colName); return n })
+    }
+  }
+
+  function toggleColumnDirect(colName: string) {
+    setExpandedCols(prev => {
+      const next = new Set(prev)
+      if (next.has(colName)) {
+        next.delete(colName)
+      } else {
+        next.add(colName)
+        if (!columnItems[colName]) loadColumn(colName)
+      }
+      return next
+    })
+  }
+
+  // --- Shared helpers ---
+
+  function handleItemUpdated(updated: WorkItem) {
+    if (hasSwimLanes) {
+      const lk = updated.fields['System.BoardLane'] ?? ''
+      setLaneItems(prev => ({
+        ...prev,
+        [lk]: (prev[lk] ?? []).map(i => i.id === updated.id ? updated : i),
+      }))
+    } else {
+      const col = updated.fields['System.BoardColumn'] ?? ''
+      setColumnItems(prev => ({
+        ...prev,
+        [col]: (prev[col] ?? []).map(i => i.id === updated.id ? updated : i),
+      }))
+    }
+    setSelectedItem(updated)
+  }
+
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     const q = searchQuery.trim()
     if (!q) return
-    setSearching(true)
-    setSearchResults(null)
+    setSearching(true); setSearchResults(null)
     try {
       const ids = await searchWorkItems(client, project, team, q)
       const wi = ids.length > 0 ? await getWorkItems(client, project, ids) : []
@@ -199,9 +277,7 @@ export function BoardView({ client, project }: Props) {
   }
 
   function closeSearch() {
-    setShowSearch(false)
-    setSearchQuery('')
-    setSearchResults(null)
+    setShowSearch(false); setSearchQuery(''); setSearchResults(null)
   }
 
   return (
@@ -276,7 +352,44 @@ export function BoardView({ client, project }: Props) {
       {error && <p className="error">{error}</p>}
       {loading && <p className="loading">Loading board...</p>}
 
-      {board && !loading && (
+      {/* Column mode: no swimlanes */}
+      {board && !loading && !hasSwimLanes && (
+        <div className="board-lanes">
+          {board.columns.slice(0, -1).map(col => {
+            const isExpanded = expandedCols.has(col.name)
+            const isLoading = loadingCols.has(col.name)
+            const items = columnItems[col.name]
+            const count = columnCounts[col.name] ?? 0
+            return (
+              <div key={col.id} className="board-lane">
+                <button className="board-lane-header" onClick={() => toggleColumnDirect(col.name)}>
+                  <span className="board-lane-name">{col.name}</span>
+                  <span className="board-column-count">{count}</span>
+                  <span className={`expand-icon ${isExpanded ? 'open' : ''}`}>
+                    <Icon path={mdiChevronDown} size={0.7} />
+                  </span>
+                </button>
+                {isExpanded && (
+                  <>
+                    {isLoading && <p className="loading">Loading...</p>}
+                    {items && (
+                      <ul className="board-cards">
+                        {items.length === 0 && (
+                          <li className="board-card muted">No items</li>
+                        )}
+                        {items.map(item => renderCard(item, () => setSelectedItem(item)))}
+                      </ul>
+                    )}
+                  </>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Lane mode: with swimlanes */}
+      {board && !loading && hasSwimLanes && (
         <div className="board-lanes">
           {board.rows.map(row => {
             const lk = laneKey(row)
@@ -306,21 +419,7 @@ export function BoardView({ client, project }: Props) {
                         {items.length === 0 && (
                           <li className="board-card muted">No items</li>
                         )}
-                        {items.map(item => (
-                          <li key={item.id} className="board-card" onClick={() => setSelectedItem(item)}>
-                            <Icon
-                              path={WIT_ICONS[item.fields['System.WorkItemType']] ?? mdiCardText}
-                              size={0.7}
-                              className={`wit-icon wit-${item.fields['System.WorkItemType'].toLowerCase().replace(/\s/g, '-')}`}
-                            />
-                            <div className="card-details">
-                              <span className="card-title">{item.fields['System.Title']}</span>
-                              {item.fields['System.AssignedTo'] && (
-                                <span className="card-meta">{item.fields['System.AssignedTo'].displayName}</span>
-                              )}
-                            </div>
-                          </li>
-                        ))}
+                        {items.map(item => renderCard(item, () => setSelectedItem(item)))}
                       </ul>
                     )}
                   </>
@@ -346,21 +445,7 @@ export function BoardView({ client, project }: Props) {
                               {colItems.length === 0 && (
                                 <li className="board-card muted">No items</li>
                               )}
-                              {colItems.map(item => (
-                                <li key={item.id} className="board-card" onClick={() => setSelectedItem(item)}>
-                                  <Icon
-                                    path={WIT_ICONS[item.fields['System.WorkItemType']] ?? mdiCardText}
-                                    size={0.7}
-                                    className={`wit-icon wit-${item.fields['System.WorkItemType'].toLowerCase().replace(/\s/g, '-')}`}
-                                  />
-                                  <div className="card-details">
-                                    <span className="card-title">{item.fields['System.Title']}</span>
-                                    {item.fields['System.AssignedTo'] && (
-                                      <span className="card-meta">{item.fields['System.AssignedTo'].displayName}</span>
-                                    )}
-                                  </div>
-                                </li>
-                              ))}
+                              {colItems.map(item => renderCard(item, () => setSelectedItem(item)))}
                             </ul>
                           )}
                         </div>
