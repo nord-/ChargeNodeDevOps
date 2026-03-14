@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiClose } from '@mdi/js'
-import type { DevOpsClient } from '../api/devops'
+import { errorMessage, type DevOpsClient } from '../api/devops'
 import { runPipeline, listBranches } from '../api/pipelines'
 import './RunPipelineDialog.css'
 
@@ -30,7 +30,7 @@ export function RunPipelineDialog({ client, project, pipelineId, pipelineName, o
           setBranch(main)
         }
       })
-      .catch(() => setError('Failed to load branches'))
+      .catch(err => setError(`Failed to load branches: ${errorMessage(err)}`))
       .finally(() => setLoadingBranches(false))
   }, [client, project, pipelineId])
 
@@ -42,8 +42,8 @@ export function RunPipelineDialog({ client, project, pipelineId, pipelineName, o
     try {
       await runPipeline(client, project, pipelineId, branch)
       onStarted()
-    } catch {
-      setError('Failed to start pipeline. Check permissions.')
+    } catch (err) {
+      setError(errorMessage(err))
     } finally {
       setLoading(false)
     }

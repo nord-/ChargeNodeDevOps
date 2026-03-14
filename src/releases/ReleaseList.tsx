@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiStar, mdiStarOutline, mdiChevronDown, mdiCheck, mdiClose, mdiRocketLaunch, mdiRefresh } from '@mdi/js'
 import { formatDate } from '../formatDate'
-import type { DevOpsClient } from '../api/devops'
+import { errorMessage, type DevOpsClient } from '../api/devops'
 import {
   listReleaseDefinitions,
   listReleases,
@@ -65,7 +65,7 @@ export function ReleaseList({ client, project }: Props) {
     setFavorites(loadFavorites(project))
     listReleaseDefinitions(client, project)
       .then(setDefinitions)
-      .catch(() => setError('Failed to load release definitions'))
+      .catch(err => setError(`Failed to load definitions: ${errorMessage(err)}`))
       .finally(() => setLoading(false))
   }, [client, project])
 
@@ -81,7 +81,8 @@ export function ReleaseList({ client, project }: Props) {
     try {
       const r = await listReleases(client, project, defId)
       setReleases(r)
-    } catch {
+    } catch (err) {
+      console.error('Failed to load releases:', err)
       setReleases([])
     } finally {
       setReleasesLoading(false)
@@ -94,7 +95,8 @@ export function ReleaseList({ client, project }: Props) {
     try {
       const r = await listReleases(client, project, defId)
       setReleases(r)
-    } catch {
+    } catch (err) {
+      console.error('Failed to reload releases:', err)
       setReleases([])
     } finally {
       setReleasesLoading(false)
@@ -115,7 +117,8 @@ export function ReleaseList({ client, project }: Props) {
     try {
       const a = await listApprovals(client, project, releaseId)
       setApprovals(a)
-    } catch {
+    } catch (err) {
+      console.error('Failed to load approvals:', err)
       setApprovals([])
     } finally {
       setApprovalsLoading(false)
@@ -137,13 +140,12 @@ export function ReleaseList({ client, project }: Props) {
       await updateApproval(client, project, approvalId, status)
       if (expandedReleaseId !== null) {
         await loadApprovals(expandedReleaseId)
-        // Refresh release list to update env badges
         if (expandedDefId !== null) {
           const r = await listReleases(client, project, expandedDefId)
           setReleases(r)
         }
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('Approval failed:', err) }
     finally {
       setApprovalBusy(null)
     }
@@ -153,14 +155,12 @@ export function ReleaseList({ client, project }: Props) {
     setStageBusy(environmentId)
     try {
       await deployEnvironment(client, project, releaseId, environmentId)
-      // Refresh releases to get updated statuses
       if (expandedDefId !== null) {
         const r = await listReleases(client, project, expandedDefId)
         setReleases(r)
       }
-      // Reload approvals since deploying may create pending approvals
       await loadApprovals(releaseId)
-    } catch { /* ignore */ }
+    } catch (err) { console.error('Deploy failed:', err) }
     finally {
       setStageBusy(null)
     }

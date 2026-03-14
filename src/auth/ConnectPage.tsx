@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext'
-import { createClient } from '../api/devops'
+import { createClient, ApiError } from '../api/devops'
 import './ConnectPage.css'
 
 export function ConnectPage() {
@@ -19,8 +19,14 @@ export function ConnectPage() {
       const client = createClient(org, token)
       await client.get('_apis/projects?api-version=7.1')
       login(org, token)
-    } catch {
-      setError('Could not connect. Check organization name and PAT.')
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setError('Invalid PAT token. Check that it has the correct scopes.')
+      } else if (err instanceof ApiError && err.status === 404) {
+        setError('Organization not found. Check the name.')
+      } else {
+        setError('Could not connect. Check organization name and PAT.')
+      }
     } finally {
       setLoading(false)
     }

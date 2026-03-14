@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiRefresh, mdiChevronDown, mdiBug, mdiBookOpen, mdiCheckboxMarked, mdiCardText, mdiPlus, mdiMagnify, mdiClose } from '@mdi/js'
-import type { DevOpsClient } from '../api/devops'
+import { errorMessage, type DevOpsClient } from '../api/devops'
 import {
   getBoard,
   queryLaneItems,
@@ -51,13 +51,13 @@ export function BoardView({ client, project }: Props) {
     const types = board ? boardTypes(board) : []
     const ids = await queryLaneItems(client, project, team, laneName, types)
     return ids.length > 0 ? await getWorkItems(client, project, ids) : []
-  })
+  }, setError)
 
   const columns = useLazyItems(async (key) => {
     const types = board ? boardTypes(board) : []
     const ids = await queryColumnItems(client, project, team, key, types)
     return ids.length > 0 ? await getWorkItems(client, project, ids) : []
-  })
+  }, setError)
 
   const loadBoard = useCallback(async () => {
     if (!boardName || !team) return
@@ -83,8 +83,8 @@ export function BoardView({ client, project }: Props) {
         const counts = await queryColumnCounts(client, project, team, colNames, types)
         columns.setCounts(counts)
       }
-    } catch {
-      setError('Failed to load board')
+    } catch (err) {
+      setError(`Failed to load board: ${errorMessage(err)}`)
     } finally {
       setLoading(false)
     }
@@ -115,8 +115,8 @@ export function BoardView({ client, project }: Props) {
       const ids = await searchWorkItems(client, project, team, q)
       const wi = ids.length > 0 ? await getWorkItems(client, project, ids) : []
       setSearchResults(wi)
-    } catch {
-      setError('Search failed')
+    } catch (err) {
+      setError(`Search failed: ${errorMessage(err)}`)
     } finally {
       setSearching(false)
     }

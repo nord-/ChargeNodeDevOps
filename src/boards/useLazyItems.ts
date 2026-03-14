@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { WorkItem } from '../api/boards'
 
-export function useLazyItems(loadFn: (key: string) => Promise<WorkItem[]>) {
+export function useLazyItems(loadFn: (key: string) => Promise<WorkItem[]>, onError?: (msg: string) => void) {
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [items, setItems] = useState<Record<string, WorkItem[]>>({})
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -12,6 +12,9 @@ export function useLazyItems(loadFn: (key: string) => Promise<WorkItem[]>) {
     try {
       const wi = await loadFn(key)
       setItems(prev => ({ ...prev, [key]: wi }))
+    } catch (err) {
+      console.error(`Failed to load "${key}":`, err)
+      onError?.(`Failed to load ${key}`)
     } finally {
       setLoading(prev => { const n = new Set(prev); n.delete(key); return n })
     }

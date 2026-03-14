@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiClose } from '@mdi/js'
-import type { DevOpsClient } from '../api/devops'
+import { errorMessage, type DevOpsClient } from '../api/devops'
 import { createWorkItem, listTeamMembers, type WorkItem } from '../api/boards'
 import './NewWorkItemDialog.css'
 
@@ -26,7 +26,7 @@ export function NewWorkItemDialog({ client, project, team, workItemTypes, onClos
   useEffect(() => {
     listTeamMembers(client, project, team)
       .then(setMembers)
-      .catch(() => {})
+      .catch(err => console.error('Failed to load team members:', err))
   }, [client, project, team])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -46,8 +46,8 @@ export function NewWorkItemDialog({ client, project, team, workItemTypes, onClos
       }
       const item = await createWorkItem(client, project, type, fields)
       onCreated(item)
-    } catch {
-      setError('Failed to create work item')
+    } catch (err) {
+      setError(errorMessage(err))
     } finally {
       setSaving(false)
     }

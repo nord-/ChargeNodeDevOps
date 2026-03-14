@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiStar, mdiStarOutline, mdiPlay, mdiChevronDown, mdiRocketLaunch, mdiRefresh } from '@mdi/js'
-import type { DevOpsClient } from '../api/devops'
+import { errorMessage, type DevOpsClient } from '../api/devops'
 import { listPipelines, listPipelineRuns, runPipeline, type Pipeline, type PipelineRun } from '../api/pipelines'
 import { formatDate } from '../formatDate'
 import { RunPipelineDialog } from './RunPipelineDialog'
@@ -57,7 +57,7 @@ export function PipelineList({ client, project }: Props) {
     setFavorites(loadFavorites(project))
     listPipelines(client, project)
       .then(setPipelines)
-      .catch(() => setError('Failed to load pipelines'))
+      .catch(err => setError(`Failed to load pipelines: ${errorMessage(err)}`))
       .finally(() => setLoading(false))
   }, [client, project])
 
@@ -67,7 +67,8 @@ export function PipelineList({ client, project }: Props) {
     try {
       const r = await listPipelineRuns(client, project, pipelineId)
       setRuns(r)
-    } catch {
+    } catch (err) {
+      console.error('Failed to load runs:', err)
       setRuns([])
     } finally {
       setRunsLoading(false)
@@ -112,7 +113,8 @@ export function PipelineList({ client, project }: Props) {
       if (expandedId === quickRun.pipelineId) {
         loadRuns(expandedId)
       }
-    } catch {
+    } catch (err) {
+      console.error('Quick run failed:', err)
       setQuickRun(null)
     } finally {
       setQuickRunning(false)

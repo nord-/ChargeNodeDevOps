@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiClose } from '@mdi/js'
-import type { DevOpsClient } from '../api/devops'
+import { errorMessage, type DevOpsClient } from '../api/devops'
 import DOMPurify from 'dompurify'
 import { updateWorkItem, getWorkItems, listTeamMembers, type WorkItem, type Board } from '../api/boards'
 import './WorkItemDialog.css'
@@ -27,7 +27,7 @@ export function WorkItemDialog({ client, project, team, item, board, onClose, on
   useEffect(() => {
     listTeamMembers(client, project, team)
       .then(setMembers)
-      .catch(() => {})
+      .catch(err => console.error('Failed to load team members:', err))
   }, [client, project, team])
 
   // Reset form when item changes
@@ -78,8 +78,8 @@ export function WorkItemDialog({ client, project, team, item, board, onClose, on
       // Re-fetch with $expand=all to get WEF fields for future edits
       const [updated] = await getWorkItems(client, project, [item.id])
       onUpdated(updated)
-    } catch {
-      setError('Failed to update work item')
+    } catch (err) {
+      setError(errorMessage(err))
     } finally {
       setSaving(false)
     }

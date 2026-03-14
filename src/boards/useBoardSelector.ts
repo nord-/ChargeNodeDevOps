@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { DevOpsClient } from '../api/devops'
+import { errorMessage, type DevOpsClient } from '../api/devops'
 import { listTeams, listBoards, type TeamRef, type BoardRef } from '../api/boards'
 
 const TEAM_KEY = (p: string) => `cn-devops-board-team-${p}`
@@ -33,7 +33,7 @@ export function useBoardSelector(client: DevOpsClient, project: string) {
         const def = match || t.find(x => x.name === project) || t[0]
         selectTeam(def.name)
       }
-    }).catch(() => setError('Failed to load teams'))
+    }).catch(err => setError(`Failed to load teams: ${errorMessage(err)}`))
   }, [client, project])
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function useBoardSelector(client: DevOpsClient, project: string) {
         const def = match || b[0]
         selectBoard(def.name)
       }
-    }).catch(() => setError('Failed to load boards'))
+    }).catch(err => setError(`Failed to load boards: ${errorMessage(err)}`))
   }, [client, project, team])
 
   return { teams, team, selectTeam, boards, boardName, selectBoard, error, setError }

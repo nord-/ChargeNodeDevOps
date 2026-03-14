@@ -1,6 +1,13 @@
 const API_BASE = 'https://dev.azure.com'
 const VSRM_BASE = 'https://vsrm.dev.azure.com'
 
+export class ApiError extends Error {
+  constructor(public status: number, public statusText: string, public detail: string) {
+    super(detail || `API ${status}: ${statusText}`)
+    this.name = 'ApiError'
+  }
+}
+
 export interface DevOpsClient {
   get: <T>(path: string) => Promise<T>
   post: <T>(path: string, body: unknown) => Promise<T>
@@ -21,7 +28,12 @@ export function createClient(organization: string, token: string): DevOpsClient 
     const url = `${base}/${organization}/${path}`
     const res = await fetch(url, { headers, ...init })
     if (!res.ok) {
-      throw new Error(`API ${res.status}: ${res.statusText}`)
+      let detail = `API ${res.status}: ${res.statusText}`
+      try {
+        const body = await res.json()
+        if (body.message) detail = body.message
+      } catch { /* no JSON body */ }
+      throw new ApiError(res.status, res.statusText, detail)
     }
     return res.json() as Promise<T>
   }
@@ -51,4 +63,10 @@ export function createClient(organization: string, token: string): DevOpsClient 
       body: JSON.stringify(body),
     }),
   }
+}
+
+export function errorMessage(err: unknown): string {
+  if (err instanceof ApiError) return err.detail
+  if (err instanceof Error) return err.message
+  return 'Unknown error'
 }

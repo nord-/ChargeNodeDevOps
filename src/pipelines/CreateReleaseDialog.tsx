@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiClose } from '@mdi/js'
-import type { DevOpsClient } from '../api/devops'
+import { errorMessage, type DevOpsClient } from '../api/devops'
 import type { PipelineRun } from '../api/pipelines'
 import { listReleaseDefinitions, createRelease, type ReleaseDefinition } from '../api/releases'
 import './RunPipelineDialog.css'
@@ -33,7 +33,7 @@ export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
         setDefinitions(matching)
         if (matching.length > 0) setSelectedDefId(matching[0].id)
       })
-      .catch(() => setError('Failed to load release definitions'))
+      .catch(err => setError(`Failed to load release definitions: ${errorMessage(err)}`))
       .finally(() => setLoadingDefs(false))
   }, [client, project, run.definition.id])
 
@@ -58,8 +58,8 @@ export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
     try {
       await createRelease(client, project, selectedDefId, run.id, alias)
       setCreated(true)
-    } catch {
-      setError('Failed to create release. Check permissions.')
+    } catch (err) {
+      setError(errorMessage(err))
     } finally {
       setLoading(false)
     }
