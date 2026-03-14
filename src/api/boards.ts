@@ -56,7 +56,7 @@ interface WorkItemBatchResult {
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function esc(value: string): string {
+export function esc(value: string): string {
   return value.replace(/'/g, "''")
 }
 
@@ -64,7 +64,7 @@ function wiqlPath(project: string, team: string): string {
   return `${project}/${team}/_apis/wit/wiql?api-version=7.1`
 }
 
-function baseConditions(project: string, allowedTypes: string[] = []): string {
+export function baseConditions(project: string, allowedTypes: string[] = []): string {
   let sql = `[System.State] <> 'Closed' AND [System.State] <> 'Removed' AND [System.TeamProject] = '${esc(project)}'`
   if (allowedTypes.length > 0) {
     sql += ` AND [System.WorkItemType] IN (${allowedTypes.map(t => `'${esc(t)}'`).join(',')})`
