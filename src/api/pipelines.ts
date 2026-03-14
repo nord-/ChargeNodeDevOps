@@ -14,15 +14,20 @@ interface PipelineListResponse {
 
 export interface PipelineRun {
   id: number
-  name: string
-  state: 'unknown' | 'inProgress' | 'completed' | 'canceling'
-  result?: 'unknown' | 'succeeded' | 'failed' | 'canceled'
-  createdDate: string
-  finishedDate?: string
-  pipeline: { id: number; name: string }
+  buildNumber: string
+  definition: { id: number; name: string }
+  sourceBranch: string
+  sourceVersion: string
+  status: 'all' | 'cancelling' | 'completed' | 'inProgress' | 'none' | 'notStarted' | 'postponed'
+  result?: 'canceled' | 'failed' | 'none' | 'partiallySucceeded' | 'succeeded'
+  startTime?: string
+  finishTime?: string
+  queueTime: string
+  requestedFor?: { displayName: string }
+  triggerInfo?: { 'ci.message'?: string }
 }
 
-interface PipelineRunListResponse {
+interface BuildListResponse {
   value: PipelineRun[]
   count: number
 }
@@ -33,8 +38,8 @@ export async function listPipelines(client: DevOpsClient, project: string): Prom
 }
 
 export async function listPipelineRuns(client: DevOpsClient, project: string, pipelineId: number): Promise<PipelineRun[]> {
-  const res = await client.get<PipelineRunListResponse>(
-    `${project}/_apis/pipelines/${pipelineId}/runs?api-version=7.1`
+  const res = await client.get<BuildListResponse>(
+    `${project}/_apis/build/builds?definitions=${pipelineId}&$top=20&api-version=7.1`
   )
   return res.value
 }

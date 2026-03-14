@@ -14,7 +14,7 @@ interface Props {
 export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
   const [definitions, setDefinitions] = useState<ReleaseDefinition[]>([])
   const [selectedDefId, setSelectedDefId] = useState<number | null>(null)
-  const [alias, setAlias] = useState('_' + run.pipeline.name)
+  const [alias, setAlias] = useState('_' + run.definition.name)
   const [loading, setLoading] = useState(false)
   const [loadingDefs, setLoadingDefs] = useState(true)
   const [error, setError] = useState('')
@@ -49,7 +49,7 @@ export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
     <div className="dialog-backdrop" onClick={onClose}>
       <div className="dialog" onClick={e => e.stopPropagation()}>
         <h3>Create Release</h3>
-        <p className="dialog-subtitle">From run #{run.id} ({run.pipeline.name})</p>
+        <p className="dialog-subtitle">From run #{run.id} ({run.definition.name})</p>
 
         {created ? (
           <div className="release-success">

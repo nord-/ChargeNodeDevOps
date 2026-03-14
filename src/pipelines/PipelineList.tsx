@@ -152,12 +152,24 @@ export function PipelineList() {
               {!runsLoading && runs.length === 0 && <li className="run-item muted">No runs found</li>}
               {runs.map(r => (
                 <li key={r.id} className="run-item">
-                  <span className={`run-status ${r.result ?? r.state}`} />
-                  <span className="run-name">#{r.id}</span>
-                  <span className="run-info">{r.result ?? r.state}</span>
-                  <span className="run-date">
-                    {new Date(r.createdDate).toLocaleDateString()}
-                  </span>
+                  <span className={`run-status ${r.result ?? r.status}`} />
+                  <div className="run-details">
+                    <span className="run-name">
+                      #{r.buildNumber}
+                      {r.triggerInfo?.['ci.message'] && (
+                        <span className="run-description"> &bull; {r.triggerInfo['ci.message']}</span>
+                      )}
+                    </span>
+                    <span className="run-meta">
+                      {r.sourceBranch && (
+                        <span className="run-branch">{r.sourceBranch.replace('refs/heads/', '')}</span>
+                      )}
+                      {r.sourceBranch && ' \u00b7 '}
+                      {r.result ?? r.status}
+                      {' \u00b7 '}
+                      {new Date(r.startTime ?? r.queueTime).toLocaleString()}
+                    </span>
+                  </div>
                   {r.result === 'succeeded' && (
                     <button
                       className="btn-release"
