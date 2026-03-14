@@ -2,9 +2,16 @@ const API_BASE = 'https://dev.azure.com'
 const VSRM_BASE = 'https://vsrm.dev.azure.com'
 
 export class ApiError extends Error {
-  constructor(public status: number, public statusText: string, public detail: string) {
+  status: number
+  statusText: string
+  detail: string
+
+  constructor(status: number, statusText: string, detail: string) {
     super(detail || `API ${status}: ${statusText}`)
     this.name = 'ApiError'
+    this.status = status
+    this.statusText = statusText
+    this.detail = detail
   }
 }
 
