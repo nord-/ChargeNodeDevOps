@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiClose } from '@mdi/js'
 import type { DevOpsClient } from '../api/devops'
+import DOMPurify from 'dompurify'
 import { updateWorkItem, getWorkItems, listTeamMembers, type WorkItem, type Board } from '../api/boards'
 import './WorkItemDialog.css'
 
@@ -100,7 +101,7 @@ export function WorkItemDialog({ client, project, team, item, board, onClose, on
         <h3 className="wi-title">{item.fields['System.Title']}</h3>
 
         {description && (
-          <div className="wi-description" dangerouslySetInnerHTML={{ __html: description }} />
+          <div className="wi-description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description) }} />
         )}
 
         <div className="wi-fields">
