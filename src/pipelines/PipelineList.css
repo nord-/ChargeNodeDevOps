@@ -4,16 +4,6 @@
   gap: 12px;
 }
 
-.project-selector select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 16px;
-  font-family: inherit;
-  background: white;
-}
-
 .pipelines {
   list-style: none;
   padding: 0;
@@ -31,59 +21,10 @@
   margin-bottom: 8px;
 }
 
-.section-title {
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #888;
-  margin: 0 0 8px;
-}
-
-.section-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border: none;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #888;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.hint {
-  text-align: center;
-  color: #aaa;
-  font-size: 13px;
-  font-style: italic;
-  margin: 8px 0;
-}
-
 .pipeline-row {
   display: flex;
   align-items: center;
   background: white;
-}
-
-.btn-fav {
-  padding: 8px 4px 8px 12px;
-  border: none;
-  background: transparent;
-  font-size: 18px;
-  color: #ccc;
-  cursor: pointer;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.btn-fav.active {
-  color: #f5a623;
 }
 
 .pipeline-toggle {
@@ -108,28 +49,22 @@
   font-weight: 500;
 }
 
-.expand-icon {
-  font-size: 12px;
-  color: #888;
-  transition: transform 0.2s;
-}
-
-.expand-icon.open {
-  transform: rotate(180deg);
-}
-
 .btn-run-small {
-  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
   border: none;
-  background: transparent;
-  color: #2da44e;
-  font-size: 16px;
+  border-radius: 6px;
+  background: #1EBE69;
+  color: white;
   cursor: pointer;
   flex-shrink: 0;
+  margin-right: 8px;
 }
 
 .btn-run-small:active {
-  background: #f5f5f5;
+  background: #19a85d;
 }
 
 .runs-panel {
@@ -166,11 +101,14 @@
 }
 
 .btn-release {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   padding: 4px 10px;
-  border: 1px solid #0078d4;
+  border: none;
   border-radius: 4px;
-  background: transparent;
-  color: #0078d4;
+  background: #1EBE69;
+  color: white;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -178,8 +116,7 @@
 }
 
 .btn-release:active {
-  background: #0078d4;
-  color: white;
+  background: #19a85d;
 }
 
 .run-item.muted {
@@ -196,7 +133,7 @@
 
 .run-status.succeeded { background: #2da44e; }
 .run-status.failed { background: #cf222e; }
-.run-status.inProgress { background: #0078d4; }
+.run-status.inProgress { background: #1EBE69; }
 .run-status.canceled, .run-status.canceling { background: #888; }
 .run-status.unknown, .run-status.completed { background: #aaa; }
 
@@ -222,6 +159,18 @@
   color: #666;
 }
 
+.run-branch-btn {
+  border: none;
+  background: transparent;
+  color: #1EBE69;
+  font-size: inherit;
+  font-family: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
 .run-meta {
   font-size: 12px;
   color: #999;
@@ -231,21 +180,7 @@
   color: #bbb;
 }
 
-.loading, .error {
-  text-align: center;
-  margin: 20px 0;
-}
-
-.error {
-  color: #cf222e;
-}
-
 @media (prefers-color-scheme: dark) {
-  .project-selector select {
-    background: #2d2d2d;
-    border-color: #444;
-    color: #e0e0e0;
-  }
   .pipeline-item {
     border-color: #333;
   }
@@ -259,7 +194,7 @@
     background: #2a2a2a;
   }
   .btn-run-small:active {
-    background: #2a2a2a;
+    background: #19a85d;
   }
   .runs-panel {
     background: #1a1a1a;
@@ -276,14 +211,5 @@
   }
   .run-id {
     color: #555;
-  }
-  .btn-fav {
-    color: #555;
-  }
-  .btn-fav.active {
-    color: #f5a623;
-  }
-  .section-toggle {
-    color: #777;
   }
 }

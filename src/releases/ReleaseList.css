@@ -1,0 +1,325 @@
+.release-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.definitions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.def-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.release-section {
+  margin-bottom: 8px;
+}
+
+.def-row {
+  display: flex;
+  align-items: center;
+  background: white;
+}
+
+.def-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 14px 12px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.def-toggle:active {
+  background: #f5f5f5;
+}
+
+.def-name {
+  font-weight: 500;
+}
+
+.releases-panel {
+  border-top: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.releases {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.release-item-wrap {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.release-item-wrap:last-child {
+  border-bottom: none;
+}
+
+.release-item-btn {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.release-item-btn:active {
+  background: #f0f0f0;
+}
+
+.release-item.muted {
+  color: #999;
+  font-style: italic;
+  padding: 10px 16px;
+}
+
+.release-status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.release-status.succeeded { background: #2da44e; }
+.release-status.failed { background: #cf222e; }
+.release-status.inProgress { background: #1EBE69; }
+.release-status.notStarted { background: #ddd; }
+.release-status.canceled { background: #888; }
+
+.release-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.release-name {
+  font-weight: 500;
+}
+
+.release-build {
+  font-weight: 400;
+  color: #666;
+}
+
+.release-branch {
+  font-size: 12px;
+  color: #1EBE69;
+}
+
+.release-meta {
+  font-size: 12px;
+  color: #999;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.env-badge {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.env-badge.succeeded { background: #dafbe1; color: #1a7f37; }
+.env-badge.failed { background: #ffebe9; color: #cf222e; }
+.env-badge.inProgress { background: #d4f5e4; color: #1EBE69; }
+.env-badge.notStarted { background: #f0f0f0; color: #888; }
+.env-badge.canceled { background: #f0f0f0; color: #666; }
+
+/* Stages panel (expanded release) */
+
+.stages-panel {
+  background: #f5f5f5;
+  border-top: 1px solid #e8e8e8;
+  padding: 8px 12px;
+}
+
+.stages {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stage-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  min-width: 90px;
+  flex: 1 1 0;
+}
+
+.stage-item.stage-succeeded { border-color: #2da44e; }
+.stage-item.stage-failed { border-color: #cf222e; }
+.stage-item.stage-inProgress { border-color: #1EBE69; }
+.stage-item.stage-canceled { border-color: #888; }
+
+.stage-name {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  word-break: break-word;
+}
+
+.stage-status-text {
+  font-size: 11px;
+  color: #888;
+}
+
+.stage-status-text.succeeded { color: #1a7f37; }
+.stage-status-text.failed { color: #cf222e; }
+.stage-status-text.inProgress { color: #1EBE69; }
+
+.stage-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-approve,
+.btn-reject {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-approve {
+  background: #2da44e;
+  color: white;
+}
+
+.btn-approve:active {
+  background: #248c3e;
+}
+
+.btn-approve:disabled,
+.btn-reject:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-reject {
+  background: #cf222e;
+  color: white;
+}
+
+.btn-reject:active {
+  background: #b01c26;
+}
+
+.btn-deploy {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #1EBE69;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btn-deploy:active {
+  background: #19a85d;
+}
+
+.btn-deploy:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (prefers-color-scheme: dark) {
+  .def-item {
+    border-color: #333;
+  }
+  .def-row {
+    background: #1e1e1e;
+  }
+  .def-toggle {
+    color: #e0e0e0;
+  }
+  .def-toggle:active {
+    background: #2a2a2a;
+  }
+  .releases-panel {
+    background: #1a1a1a;
+    border-top-color: #333;
+  }
+  .release-item-wrap {
+    border-bottom-color: #2a2a2a;
+  }
+  .release-item-btn {
+    color: #e0e0e0;
+  }
+  .release-item-btn:active {
+    background: #2a2a2a;
+  }
+  .release-build { color: #999; }
+  .release-branch { color: #4edfa0; }
+  .release-status.notStarted { background: #444; }
+  .env-badge.succeeded { background: #1a3a24; color: #3fb950; }
+  .env-badge.failed { background: #3a1a1a; color: #f85149; }
+  .env-badge.inProgress { background: #1a3a2a; color: #4edfa0; }
+  .env-badge.notStarted { background: #2a2a2a; color: #777; }
+  .env-badge.canceled { background: #2a2a2a; color: #777; }
+  .stages-panel {
+    background: #161616;
+    border-top-color: #333;
+  }
+  .stage-item {
+    background: #1e1e1e;
+    border-color: #333;
+  }
+  .stage-name {
+    color: #e0e0e0;
+  }
+  .stage-status-text {
+    color: #777;
+  }
+  .btn-approve {
+    background: #238636;
+    color: white;
+  }
+  .btn-reject {
+    background: #b62324;
+    color: white;
+  }
+}

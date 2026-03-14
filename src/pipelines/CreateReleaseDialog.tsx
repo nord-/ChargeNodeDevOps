@@ -14,7 +14,6 @@ interface Props {
 export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
   const [definitions, setDefinitions] = useState<ReleaseDefinition[]>([])
   const [selectedDefId, setSelectedDefId] = useState<number | null>(null)
-  const [alias, setAlias] = useState('_' + run.definition.name)
   const [loading, setLoading] = useState(false)
   const [loadingDefs, setLoadingDefs] = useState(true)
   const [error, setError] = useState('')
@@ -22,24 +21,43 @@ export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
 
   useEffect(() => {
     listReleaseDefinitions(client, project)
-      .then(defs => {
-        setDefinitions(defs)
-        if (defs.length > 0) setSelectedDefId(defs[0].id)
+      .then(allDefs => {
+        const buildDefId = String(run.definition.id)
+        const matching = allDefs.filter(d =>
+          d.artifacts?.some(a =>
+            a.type === 'Build' && a.definitionReference?.definition?.id === buildDefId
+          )
+        )
+        setDefinitions(matching)
+        if (matching.length > 0) setSelectedDefId(matching[0].id)
       })
       .catch(() => setError('Failed to load release definitions'))
       .finally(() => setLoadingDefs(false))
-  }, [client, project])
+  }, [client, project, run.definition.id])
+
+  function getAlias(): string {
+    if (selectedDefId === null) return ''
+    const def = definitions.find(d => d.id === selectedDefId)
+    if (!def) return ''
+    const buildDefId = String(run.definition.id)
+    const artifact = def.artifacts?.find(a =>
+      a.type === 'Build' && a.definitionReference?.definition?.id === buildDefId
+    )
+    return artifact?.alias ?? ''
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (selectedDefId === null) return
+    const alias = getAlias()
+    if (!alias) return
     setError('')
     setLoading(true)
     try {
       await createRelease(client, project, selectedDefId, run.id, alias)
       setCreated(true)
     } catch {
-      setError('Failed to create release. Check permissions and artifact alias.')
+      setError('Failed to create release. Check permissions.')
     } finally {
       setLoading(false)
     }
@@ -49,7 +67,7 @@ export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
     <div className="dialog-backdrop" onClick={onClose}>
       <div className="dialog" onClick={e => e.stopPropagation()}>
         <h3>Create Release</h3>
-        <p className="dialog-subtitle">From run #{run.id} ({run.definition.name})</p>
+        <p className="dialog-subtitle">From build #{run.buildNumber}</p>
 
         {created ? (
           <div className="release-success">
@@ -61,30 +79,21 @@ export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
             {loadingDefs ? (
               <p className="loading">Loading release definitions...</p>
             ) : definitions.length === 0 ? (
-              <p className="error">No release definitions found in this project.</p>
+              <p className="error">No matching release definitions found for this pipeline.</p>
+            ) : definitions.length === 1 ? (
+              <p>Release definition: <strong>{definitions[0].name}</strong></p>
             ) : (
-              <>
-                <label>
-                  Release definition
-                  <select
-                    value={selectedDefId ?? ''}
-                    onChange={e => setSelectedDefId(Number(e.target.value))}
-                  >
-                    {definitions.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Artifact alias
-                  <input
-                    type="text"
-                    value={alias}
-                    onChange={e => setAlias(e.target.value)}
-                    required
-                  />
-                </label>
-              </>
+              <label>
+                Release definition
+                <select
+                  value={selectedDefId ?? ''}
+                  onChange={e => setSelectedDefId(Number(e.target.value))}
+                >
+                  {definitions.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </label>
             )}
             {error && <p className="error">{error}</p>}
             <div className="dialog-actions">

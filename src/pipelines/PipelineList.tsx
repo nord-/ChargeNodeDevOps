@@ -1,8 +1,9 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
-import { useAuth } from '../auth/AuthContext'
-import { createClient } from '../api/devops'
-import { listProjects, type Project } from '../api/projects'
-import { listPipelines, listPipelineRuns, type Pipeline, type PipelineRun } from '../api/pipelines'
+import { useEffect, useState, useCallback } from 'react'
+import { Icon } from '@mdi/react'
+import { mdiStar, mdiStarOutline, mdiPlay, mdiChevronDown, mdiRocketLaunch } from '@mdi/js'
+import type { DevOpsClient } from '../api/devops'
+import { listPipelines, listPipelineRuns, runPipeline, type Pipeline, type PipelineRun } from '../api/pipelines'
+import { formatDate } from '../formatDate'
 import { RunPipelineDialog } from './RunPipelineDialog'
 import { CreateReleaseDialog } from './CreateReleaseDialog'
 import './PipelineList.css'
@@ -14,8 +15,7 @@ function loadFavorites(project: string): Set<number> {
     const raw = localStorage.getItem(FAV_KEY)
     if (!raw) return new Set()
     const data = JSON.parse(raw)
-    const ids: number[] = data[project] ?? []
-    return new Set(ids)
+    return new Set<number>(data[project] ?? [])
   } catch { return new Set() }
 }
 
@@ -28,14 +28,12 @@ function saveFavorites(project: string, ids: Set<number>) {
   } catch { /* ignore */ }
 }
 
-export function PipelineList() {
-  const { auth } = useAuth()
-  const client = useMemo(() => auth ? createClient(auth.organization, auth.token) : null, [auth])
+interface Props {
+  client: DevOpsClient
+  project: string
+}
 
-  const [projects, setProjects] = useState<Project[]>([])
-  const [selectedProject, setSelectedProject] = useState(
-    () => localStorage.getItem('cn-devops-project') ?? ''
-  )
+export function PipelineList({ client, project }: Props) {
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [runs, setRuns] = useState<PipelineRun[]>([])
@@ -46,44 +44,35 @@ export function PipelineList() {
   const [releaseRun, setReleaseRun] = useState<PipelineRun | null>(null)
   const [favorites, setFavorites] = useState<Set<number>>(new Set())
   const [showOther, setShowOther] = useState(false)
+  const [quickRun, setQuickRun] = useState<{ pipelineId: number; branch: string } | null>(null)
+  const [quickRunning, setQuickRunning] = useState(false)
 
   useEffect(() => {
-    if (!client) return
-    listProjects(client).then(p => {
-      setProjects(p)
-      const saved = localStorage.getItem('cn-devops-project')
-      const match = saved && p.some(proj => proj.name === saved)
-      if (!match && p.length > 0) setSelectedProject(p[0].name)
-    }).catch(() => setError('Failed to load projects'))
-  }, [client])
-
-  useEffect(() => {
-    if (!client || !selectedProject) return
+    if (!project) return
     setLoading(true)
     setError('')
     setPipelines([])
     setExpandedId(null)
     setShowOther(false)
-    setFavorites(loadFavorites(selectedProject))
-    listPipelines(client, selectedProject)
+    setFavorites(loadFavorites(project))
+    listPipelines(client, project)
       .then(setPipelines)
       .catch(() => setError('Failed to load pipelines'))
       .finally(() => setLoading(false))
-  }, [client, selectedProject])
+  }, [client, project])
 
   const loadRuns = useCallback(async (pipelineId: number) => {
-    if (!client) return
     setRuns([])
     setRunsLoading(true)
     try {
-      const r = await listPipelineRuns(client, selectedProject, pipelineId)
+      const r = await listPipelineRuns(client, project, pipelineId)
       setRuns(r)
     } catch {
       setRuns([])
     } finally {
       setRunsLoading(false)
     }
-  }, [client, selectedProject])
+  }, [client, project])
 
   function toggleRuns(pipelineId: number) {
     if (expandedId === pipelineId) {
@@ -102,7 +91,7 @@ export function PipelineList() {
       } else {
         next.add(pipelineId)
       }
-      saveFavorites(selectedProject, next)
+      saveFavorites(project, next)
       return next
     })
   }
@@ -111,6 +100,22 @@ export function PipelineList() {
     setRunTarget(null)
     if (expandedId !== null) {
       loadRuns(expandedId)
+    }
+  }
+
+  async function handleQuickRunConfirm() {
+    if (!quickRun) return
+    setQuickRunning(true)
+    try {
+      await runPipeline(client, project, quickRun.pipelineId, quickRun.branch)
+      setQuickRun(null)
+      if (expandedId === quickRun.pipelineId) {
+        loadRuns(expandedId)
+      }
+    } catch {
+      setQuickRun(null)
+    } finally {
+      setQuickRunning(false)
     }
   }
 
@@ -127,21 +132,21 @@ export function PipelineList() {
             onClick={() => toggleFavorite(p.id)}
             title={isFav ? 'Remove from favorites' : 'Add to favorites'}
           >
-            {isFav ? '\u2605' : '\u2606'}
+            <Icon path={isFav ? mdiStar : mdiStarOutline} size={0.85} />
           </button>
           <button
             className="pipeline-toggle"
             onClick={() => toggleRuns(p.id)}
           >
             <span className="pipeline-name">{p.name}</span>
-            <span className={`expand-icon ${expandedId === p.id ? 'open' : ''}`}>&#9662;</span>
+            <span className={`expand-icon ${expandedId === p.id ? 'open' : ''}`}><Icon path={mdiChevronDown} size={0.8} /></span>
           </button>
           <button
             className="btn-run-small"
             onClick={e => { e.stopPropagation(); setRunTarget(p) }}
             title="Run pipeline"
           >
-            &#9654;
+            <Icon path={mdiPlay} size={0.9} />
           </button>
         </div>
         {expandedId === p.id && (
@@ -162,12 +167,18 @@ export function PipelineList() {
                     </span>
                     <span className="run-meta">
                       {r.sourceBranch && (
-                        <span className="run-branch">{r.sourceBranch.replace('refs/heads/', '')}</span>
+                        <button
+                          className="run-branch-btn"
+                          onClick={() => setQuickRun({ pipelineId: p.id, branch: r.sourceBranch.replace('refs/heads/', '') })}
+                          title={`Run on ${r.sourceBranch.replace('refs/heads/', '')}`}
+                        >
+                          {r.sourceBranch.replace('refs/heads/', '')}
+                        </button>
                       )}
                       {r.sourceBranch && ' \u00b7 '}
                       {r.result ?? r.status}
                       {' \u00b7 '}
-                      {new Date(r.startTime ?? r.queueTime).toLocaleString()}
+                      {formatDate(r.startTime ?? r.queueTime)}
                     </span>
                   </div>
                   {r.result === 'succeeded' && (
@@ -176,7 +187,7 @@ export function PipelineList() {
                       onClick={() => setReleaseRun(r)}
                       title="Create release from this run"
                     >
-                      Release
+                      <Icon path={mdiRocketLaunch} size={0.6} /> Release
                     </button>
                   )}
                 </li>
@@ -190,20 +201,6 @@ export function PipelineList() {
 
   return (
     <div className="pipeline-list">
-      <div className="project-selector">
-        <select
-          value={selectedProject}
-          onChange={e => {
-            setSelectedProject(e.target.value)
-            localStorage.setItem('cn-devops-project', e.target.value)
-          }}
-        >
-          {projects.map(p => (
-            <option key={p.id} value={p.name}>{p.name}</option>
-          ))}
-        </select>
-      </div>
-
       {error && <p className="error">{error}</p>}
       {loading && <p className="loading">Loading pipelines...</p>}
 
@@ -221,7 +218,7 @@ export function PipelineList() {
             onClick={() => setShowOther(v => !v)}
           >
             <span>Other pipelines ({otherPipelines.length})</span>
-            <span className={`expand-icon ${showOther ? 'open' : ''}`}>&#9662;</span>
+            <span className={`expand-icon ${showOther ? 'open' : ''}`}><Icon path={mdiChevronDown} size={0.8} /></span>
           </button>
           {showOther && (
             <ul className="pipelines">{otherPipelines.map(renderPipeline)}</ul>
@@ -233,10 +230,10 @@ export function PipelineList() {
         <p className="hint">Tap the star to add favorites</p>
       )}
 
-      {runTarget && client && (
+      {runTarget && (
         <RunPipelineDialog
           client={client}
-          project={selectedProject}
+          project={project}
           pipelineId={runTarget.id}
           pipelineName={runTarget.name}
           onClose={() => setRunTarget(null)}
@@ -244,13 +241,28 @@ export function PipelineList() {
         />
       )}
 
-      {releaseRun && client && (
+      {releaseRun && (
         <CreateReleaseDialog
           client={client}
-          project={selectedProject}
+          project={project}
           run={releaseRun}
           onClose={() => setReleaseRun(null)}
         />
+      )}
+
+      {quickRun && (
+        <div className="dialog-backdrop" onClick={() => setQuickRun(null)}>
+          <div className="dialog" onClick={e => e.stopPropagation()}>
+            <h3>Run pipeline</h3>
+            <p>Start a build on <strong>{quickRun.branch}</strong>?</p>
+            <div className="dialog-actions">
+              <button className="btn-cancel" onClick={() => setQuickRun(null)}>Cancel</button>
+              <button className="btn-run" onClick={handleQuickRunConfirm} disabled={quickRunning}>
+                {quickRunning ? 'Starting...' : 'Run'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

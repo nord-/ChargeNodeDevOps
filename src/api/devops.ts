@@ -6,6 +6,7 @@ export interface DevOpsClient {
   post: <T>(path: string, body: unknown) => Promise<T>
   vsrmGet: <T>(path: string) => Promise<T>
   vsrmPost: <T>(path: string, body: unknown) => Promise<T>
+  vsrmPatch: <T>(path: string, body: unknown) => Promise<T>
 }
 
 export function createClient(organization: string, token: string): DevOpsClient {
@@ -32,6 +33,10 @@ export function createClient(organization: string, token: string): DevOpsClient 
     vsrmGet: <T>(path: string) => request<T>(VSRM_BASE, path),
     vsrmPost: <T>(path: string, body: unknown) => request<T>(VSRM_BASE, path, {
       method: 'POST',
+      body: JSON.stringify(body),
+    }),
+    vsrmPatch: <T>(path: string, body: unknown) => request<T>(VSRM_BASE, path, {
+      method: 'PATCH',
       body: JSON.stringify(body),
     }),
   }

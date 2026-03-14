@@ -14,7 +14,7 @@
 .connect-card h2 {
   margin: 0 0 20px;
   font-size: 22px;
-  color: #0078d4;
+  color: #1EBE69;
 }
 
 .connect-card form {
@@ -42,13 +42,13 @@
 
 .connect-card input:focus {
   outline: none;
-  border-color: #0078d4;
-  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+  border-color: #1EBE69;
+  box-shadow: 0 0 0 2px rgba(30, 190, 105, 0.2);
 }
 
 .connect-card button {
   padding: 12px;
-  background: #0078d4;
+  background: #1EBE69;
   color: white;
   border: none;
   border-radius: 6px;
@@ -78,6 +78,6 @@
     color: #e0e0e0;
   }
   .connect-card input:focus {
-    border-color: #0078d4;
+    border-color: #1EBE69;
   }
 }

@@ -44,6 +44,32 @@ export async function listPipelineRuns(client: DevOpsClient, project: string, pi
   return res.value
 }
 
+interface BuildDefinition {
+  repository: { id: string; type: string }
+}
+
+interface GitRef {
+  name: string
+  objectId: string
+}
+
+interface GitRefListResponse {
+  value: GitRef[]
+}
+
+export async function listBranches(client: DevOpsClient, project: string, pipelineId: number): Promise<string[]> {
+  const def = await client.get<BuildDefinition>(
+    `${project}/_apis/build/definitions/${pipelineId}?api-version=7.1`
+  )
+  if (def.repository.type !== 'TfsGit') {
+    return []
+  }
+  const refs = await client.get<GitRefListResponse>(
+    `${project}/_apis/git/repositories/${def.repository.id}/refs?filter=heads/&api-version=7.1`
+  )
+  return refs.value.map(r => r.name.replace('refs/heads/', ''))
+}
+
 export async function runPipeline(client: DevOpsClient, project: string, pipelineId: number, branch: string): Promise<PipelineRun> {
   return client.post<PipelineRun>(
     `${project}/_apis/pipelines/${pipelineId}/runs?api-version=7.1`,
