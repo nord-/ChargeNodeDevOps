@@ -81,6 +81,7 @@ function App() {
             <Icon path={mdiRocketLaunch} size={1} />
             <span className="nav-label">Releases</span>
           </button>
+          <span className="nav-version">v{__APP_VERSION__}</span>
         </nav>
         <main className="content">
         {tab === 'boards' && client && <BoardView client={client} project={selectedProject} />}

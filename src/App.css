@@ -67,6 +67,14 @@
   flex-shrink: 0;
 }
 
+.nav-version {
+  margin-top: auto;
+  padding: 8px;
+  font-size: 10px;
+  color: #aaa;
+  text-align: center;
+}
+
 .nav-btn {
   padding: 12px;
   border: none;
@@ -269,5 +277,8 @@
   .btn-action-primary {
     background: #1EBE69;
     color: white;
+  }
+  .nav-version {
+    color: #555;
   }
 }
