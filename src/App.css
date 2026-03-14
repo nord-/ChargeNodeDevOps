@@ -8,6 +8,9 @@
   background: #0078d4;
   color: white;
   padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .header h1 {
@@ -15,6 +18,16 @@
   font-size: 20px;
   font-weight: 600;
   color: white;
+}
+
+.disconnect-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .nav {

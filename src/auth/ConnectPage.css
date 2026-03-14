@@ -1,0 +1,83 @@
+.connect-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  padding: 16px;
+}
+
+.connect-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.connect-card h2 {
+  margin: 0 0 20px;
+  font-size: 22px;
+  color: #0078d4;
+}
+
+.connect-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.connect-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+}
+
+.connect-card input {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  font-family: inherit;
+}
+
+.connect-card input:focus {
+  outline: none;
+  border-color: #0078d4;
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+.connect-card button {
+  padding: 12px;
+  background: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.connect-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.connect-card .error {
+  color: #d32f2f;
+  font-size: 14px;
+  margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .connect-card label {
+    color: #aaa;
+  }
+  .connect-card input {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+  .connect-card input:focus {
+    border-color: #0078d4;
+  }
+}
