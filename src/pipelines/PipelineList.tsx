@@ -1,8 +1,9 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { createClient } from '../api/devops'
 import { listProjects, type Project } from '../api/projects'
 import { listPipelines, listPipelineRuns, type Pipeline, type PipelineRun } from '../api/pipelines'
+import { RunPipelineDialog } from './RunPipelineDialog'
 import './PipelineList.css'
 
 export function PipelineList() {
@@ -16,6 +17,7 @@ export function PipelineList() {
   const [runs, setRuns] = useState<PipelineRun[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [runTarget, setRunTarget] = useState<Pipeline | null>(null)
 
   useEffect(() => {
     if (!client) return
@@ -37,19 +39,30 @@ export function PipelineList() {
       .finally(() => setLoading(false))
   }, [client, selectedProject])
 
-  async function toggleRuns(pipelineId: number) {
-    if (expandedId === pipelineId) {
-      setExpandedId(null)
-      return
-    }
+  const loadRuns = useCallback(async (pipelineId: number) => {
     if (!client) return
-    setExpandedId(pipelineId)
     setRuns([])
     try {
       const r = await listPipelineRuns(client, selectedProject, pipelineId)
       setRuns(r)
     } catch {
       setRuns([])
+    }
+  }, [client, selectedProject])
+
+  async function toggleRuns(pipelineId: number) {
+    if (expandedId === pipelineId) {
+      setExpandedId(null)
+      return
+    }
+    setExpandedId(pipelineId)
+    loadRuns(pipelineId)
+  }
+
+  function handleRunStarted() {
+    setRunTarget(null)
+    if (expandedId !== null) {
+      loadRuns(expandedId)
     }
   }
 
@@ -72,13 +85,22 @@ export function PipelineList() {
       <ul className="pipelines">
         {pipelines.map(p => (
           <li key={p.id} className="pipeline-item">
-            <button
-              className="pipeline-row"
-              onClick={() => toggleRuns(p.id)}
-            >
-              <span className="pipeline-name">{p.name}</span>
-              <span className={`expand-icon ${expandedId === p.id ? 'open' : ''}`}>&#9662;</span>
-            </button>
+            <div className="pipeline-row">
+              <button
+                className="pipeline-toggle"
+                onClick={() => toggleRuns(p.id)}
+              >
+                <span className="pipeline-name">{p.name}</span>
+                <span className={`expand-icon ${expandedId === p.id ? 'open' : ''}`}>&#9662;</span>
+              </button>
+              <button
+                className="btn-run-small"
+                onClick={e => { e.stopPropagation(); setRunTarget(p) }}
+                title="Run pipeline"
+              >
+                &#9654;
+              </button>
+            </div>
             {expandedId === p.id && (
               <ul className="runs">
                 {runs.length === 0 && <li className="run-item muted">No recent runs</li>}
@@ -99,6 +121,17 @@ export function PipelineList() {
           </li>
         ))}
       </ul>
+
+      {runTarget && client && (
+        <RunPipelineDialog
+          client={client}
+          project={selectedProject}
+          pipelineId={runTarget.id}
+          pipelineName={runTarget.name}
+          onClose={() => setRunTarget(null)}
+          onStarted={handleRunStarted}
+        />
+      )}
     </div>
   )
 }

@@ -1,0 +1,106 @@
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.dialog {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.dialog h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+}
+
+.dialog input {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  font-family: inherit;
+}
+
+.dialog input:focus {
+  outline: none;
+  border-color: #0078d4;
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+.dialog .error {
+  color: #cf222e;
+  font-size: 14px;
+  margin: 8px 0 0;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.btn-cancel {
+  padding: 10px 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.btn-run {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #2da44e;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-run:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dialog {
+    background: #1e1e1e;
+  }
+  .dialog h3 {
+    color: #e0e0e0;
+  }
+  .dialog label {
+    color: #aaa;
+  }
+  .dialog input {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+  .btn-cancel {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+}

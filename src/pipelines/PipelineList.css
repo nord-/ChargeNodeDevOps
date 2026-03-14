@@ -28,20 +28,26 @@
 }
 
 .pipeline-row {
-  width: 100%;
+  display: flex;
+  align-items: center;
+  background: white;
+}
+
+.pipeline-toggle {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 14px 12px 14px 16px;
   border: none;
-  background: white;
+  background: transparent;
   font-size: 15px;
   font-family: inherit;
   cursor: pointer;
   text-align: left;
 }
 
-.pipeline-row:active {
+.pipeline-toggle:active {
   background: #f5f5f5;
 }
 
@@ -57,6 +63,20 @@
 
 .expand-icon.open {
   transform: rotate(180deg);
+}
+
+.btn-run-small {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: #2da44e;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-run-small:active {
+  background: #f5f5f5;
 }
 
 .runs {
@@ -132,9 +152,14 @@
   }
   .pipeline-row {
     background: #1e1e1e;
+  }
+  .pipeline-toggle {
     color: #e0e0e0;
   }
-  .pipeline-row:active {
+  .pipeline-toggle:active {
+    background: #2a2a2a;
+  }
+  .btn-run-small:active {
     background: #2a2a2a;
   }
   .runs {

@@ -38,3 +38,16 @@ export async function listPipelineRuns(client: DevOpsClient, project: string, pi
   )
   return res.value
 }
+
+export async function runPipeline(client: DevOpsClient, project: string, pipelineId: number, branch: string): Promise<PipelineRun> {
+  return client.post<PipelineRun>(
+    `${project}/_apis/pipelines/${pipelineId}/runs?api-version=7.1`,
+    {
+      resources: {
+        repositories: {
+          self: { refName: `refs/heads/${branch}` },
+        },
+      },
+    },
+  )
+}
