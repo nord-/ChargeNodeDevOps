@@ -15,11 +15,27 @@
   padding: 24px;
   width: 100%;
   max-width: 360px;
+  position: relative;
+}
+
+.dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dialog h3 {
   margin: 0 0 4px;
   font-size: 18px;
+  padding-right: 28px;
 }
 
 .dialog-subtitle {

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '@mdi/react'
+import { mdiClose } from '@mdi/js'
 import type { DevOpsClient } from '../api/devops'
 import { runPipeline, listBranches } from '../api/pipelines'
 import './RunPipelineDialog.css'
@@ -50,6 +52,7 @@ export function RunPipelineDialog({ client, project, pipelineId, pipelineName, o
   return (
     <div className="dialog-backdrop" onClick={onClose}>
       <div className="dialog" onClick={e => e.stopPropagation()}>
+        <button className="dialog-close" onClick={onClose}><Icon path={mdiClose} size={0.8} /></button>
         <h3>Run {pipelineName}</h3>
         <form onSubmit={handleRun}>
           <label>
@@ -74,7 +77,6 @@ export function RunPipelineDialog({ client, project, pipelineId, pipelineName, o
           </label>
           {error && <p className="error">{error}</p>}
           <div className="dialog-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn-run" disabled={loading || loadingBranches || !branch}>
               {loading ? 'Starting...' : 'Run'}
             </button>

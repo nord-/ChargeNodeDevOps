@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '@mdi/react'
+import { mdiClose } from '@mdi/js'
 import type { DevOpsClient } from '../api/devops'
 import type { PipelineRun } from '../api/pipelines'
 import { listReleaseDefinitions, createRelease, type ReleaseDefinition } from '../api/releases'
@@ -66,13 +68,13 @@ export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
   return (
     <div className="dialog-backdrop" onClick={onClose}>
       <div className="dialog" onClick={e => e.stopPropagation()}>
+        <button className="dialog-close" onClick={onClose}><Icon path={mdiClose} size={0.8} /></button>
         <h3>Create Release</h3>
         <p className="dialog-subtitle">From build #{run.buildNumber}</p>
 
         {created ? (
           <div className="release-success">
             <p>Release created successfully!</p>
-            <button type="button" className="btn-run" onClick={onClose}>Close</button>
           </div>
         ) : (
           <form onSubmit={handleCreate}>
@@ -97,7 +99,6 @@ export function CreateReleaseDialog({ client, project, run, onClose }: Props) {
             )}
             {error && <p className="error">{error}</p>}
             <div className="dialog-actions">
-              <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
               <button
                 type="submit"
                 className="btn-run"

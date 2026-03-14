@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '@mdi/react'
+import { mdiClose } from '@mdi/js'
 import type { DevOpsClient } from '../api/devops'
 import { updateWorkItem, listTeamMembers, type WorkItem, type Board } from '../api/boards'
 import './WorkItemDialog.css'
@@ -70,6 +72,7 @@ export function WorkItemDialog({ client, project, team, item, board, onClose, on
   return (
     <div className="dialog-backdrop" onClick={onClose}>
       <div className="dialog wi-dialog" onClick={e => e.stopPropagation()}>
+        <button className="dialog-close" onClick={onClose}><Icon path={mdiClose} size={0.8} /></button>
         <div className="wi-header">
           <span className={`wi-type wit-${item.fields['System.WorkItemType'].toLowerCase().replace(/\s/g, '-')}`}>
             {item.fields['System.WorkItemType']}
@@ -124,14 +127,13 @@ export function WorkItemDialog({ client, project, team, item, board, onClose, on
 
         {error && <p className="error">{error}</p>}
 
-        <div className="dialog-actions">
-          <button type="button" className="btn-cancel" onClick={onClose}>Close</button>
-          {hasChanges && (
+        {hasChanges && (
+          <div className="dialog-actions">
             <button type="button" className="btn-run" onClick={handleSave} disabled={saving}>
               {saving ? 'Saving...' : 'Save'}
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
