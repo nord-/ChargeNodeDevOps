@@ -9,6 +9,9 @@
   --brand: #1EBE69;
   --brand-active: #19a85d;
 
+  /* Row name scaling (pipeline/release definition rows) */
+  --row-name-size: clamp(0.75rem, 0.5rem + 1.2vw, 0.9375rem);
+
   /* Text */
   --text: #1a1a1a;
   --text-secondary: #555;
