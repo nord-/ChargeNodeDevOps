@@ -136,3 +136,114 @@ export async function createRelease(
     },
   )
 }
+
+export interface ReleaseTask {
+  id: number
+  name: string
+  status: string
+  startTime?: string
+  finishTime?: string
+  percentComplete?: number
+  issues?: { issueType: string; message: string }[]
+}
+
+export interface ReleaseDeployPhase {
+  id: number
+  name: string
+  rank: number
+  status: string
+}
+
+interface DeploymentAttempt {
+  attempt: number
+  status: string
+  releaseDeployPhases: ReleaseDeployPhase[]
+}
+
+export interface ReleaseEnvironmentDetail extends ReleaseEnvironment {
+  deploySteps: DeploymentAttempt[]
+}
+
+/** A task from the latest deployment attempt, carrying the phase it belongs to so its log can be fetched. */
+export interface DeployTask extends ReleaseTask {
+  phaseId: number
+  phaseName: string
+}
+
+interface ReleaseTaskListResponse {
+  value: ReleaseTask[]
+  count: number
+}
+
+/** Stage statuses that mean the deployment is still moving, so the view needs to keep polling. */
+const ACTIVE_STATUSES = ['inProgress', 'queued', 'scheduled', 'pending']
+
+export function isActiveStatus(status: string | undefined): boolean {
+  return status !== undefined && ACTIVE_STATUSES.includes(status)
+}
+
+/** The phases of the latest deployment attempt, in run order. Earlier attempts are dropped — the UI shows the current run. */
+export function latestPhases(detail: ReleaseEnvironmentDetail): ReleaseDeployPhase[] {
+  const steps = detail.deploySteps ?? []
+  if (steps.length === 0) return []
+  const latest = steps.reduce((a, b) => (b.attempt >= a.attempt ? b : a))
+  return [...(latest.releaseDeployPhases ?? [])].sort((a, b) => a.rank - b.rank)
+}
+
+export async function getEnvironmentDetail(
+  client: DevOpsClient,
+  project: string,
+  releaseId: number,
+  environmentId: number,
+): Promise<ReleaseEnvironmentDetail> {
+  return client.vsrmGet<ReleaseEnvironmentDetail>(
+    `${project}/_apis/release/releases/${releaseId}/environments/${environmentId}?api-version=7.1`
+  )
+}
+
+export async function getPhaseTasks(
+  client: DevOpsClient,
+  project: string,
+  releaseId: number,
+  environmentId: number,
+  phase: ReleaseDeployPhase,
+): Promise<DeployTask[]> {
+  const res = await client.vsrmGet<ReleaseTaskListResponse>(
+    `${project}/_apis/release/releases/${releaseId}/environments/${environmentId}` +
+    `/deployPhases/${phase.id}/tasks?api-version=7.1`
+  )
+  return res.value.map(task => ({ ...task, phaseId: phase.id, phaseName: phase.name }))
+}
+
+/**
+ * Tasks for every phase of the latest attempt.
+ *
+ * The environment detail carries the phases but always reports an empty
+ * deploymentJobs array, so the tasks have to be fetched per phase.
+ */
+export async function listDeployTasks(
+  client: DevOpsClient,
+  project: string,
+  releaseId: number,
+  environmentId: number,
+  phases: ReleaseDeployPhase[],
+): Promise<DeployTask[]> {
+  const perPhase = await Promise.all(
+    phases.map(phase => getPhaseTasks(client, project, releaseId, environmentId, phase))
+  )
+  return perPhase.flat()
+}
+
+export async function getTaskLog(
+  client: DevOpsClient,
+  project: string,
+  releaseId: number,
+  environmentId: number,
+  phaseId: number,
+  taskId: number,
+): Promise<string> {
+  return client.vsrmGetText(
+    `${project}/_apis/release/releases/${releaseId}/environments/${environmentId}` +
+    `/deployPhases/${phaseId}/tasks/${taskId}/logs?api-version=7.1`
+  )
+}

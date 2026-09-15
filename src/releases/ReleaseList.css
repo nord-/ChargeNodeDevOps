@@ -125,8 +125,15 @@
 }
 
 .release-name {
+  display: flex;
+  align-items: center;
+  min-width: 0;
   font-weight: 500;
+}
+
+.release-name-text {
   overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .release-build {
@@ -275,4 +282,41 @@
 .btn-deploy:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.stage-open {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.live-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: live-pulse 1.6s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
 }
