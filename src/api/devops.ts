@@ -21,6 +21,7 @@ export interface DevOpsClient {
   patch: <T>(path: string, body: unknown) => Promise<T>
   jsonPatch: <T>(path: string, ops: unknown[]) => Promise<T>
   vsrmGet: <T>(path: string) => Promise<T>
+  vsrmGetText: (path: string) => Promise<string>
   vsrmPost: <T>(path: string, body: unknown) => Promise<T>
   vsrmPatch: <T>(path: string, body: unknown) => Promise<T>
 }
@@ -31,7 +32,7 @@ export function createClient(organization: string, token: string): DevOpsClient 
     'Content-Type': 'application/json',
   }
 
-  async function request<T>(base: string, path: string, init?: RequestInit): Promise<T> {
+  async function send(base: string, path: string, init?: RequestInit): Promise<Response> {
     const url = `${base}/${organization}/${path}`
     const res = await fetch(url, { headers, ...init })
     if (!res.ok) {
@@ -42,7 +43,17 @@ export function createClient(organization: string, token: string): DevOpsClient 
       } catch { /* no JSON body */ }
       throw new ApiError(res.status, res.statusText, detail)
     }
+    return res
+  }
+
+  async function request<T>(base: string, path: string, init?: RequestInit): Promise<T> {
+    const res = await send(base, path, init)
     return res.json() as Promise<T>
+  }
+
+  async function requestText(base: string, path: string): Promise<string> {
+    const res = await send(base, path)
+    return res.text()
   }
 
   return {
@@ -61,6 +72,7 @@ export function createClient(organization: string, token: string): DevOpsClient 
       body: JSON.stringify(ops),
     }),
     vsrmGet: <T>(path: string) => request<T>(VSRM_BASE, path),
+    vsrmGetText: (path: string) => requestText(VSRM_BASE, path),
     vsrmPost: <T>(path: string, body: unknown) => request<T>(VSRM_BASE, path, {
       method: 'POST',
       body: JSON.stringify(body),

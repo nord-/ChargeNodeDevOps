@@ -1,18 +1,23 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Icon } from '@mdi/react'
 import { mdiStar, mdiStarOutline, mdiChevronDown, mdiCheck, mdiClose, mdiRocketLaunch, mdiRefresh } from '@mdi/js'
 import { formatDate } from '../formatDate'
-import { errorMessage, type DevOpsClient } from '../api/devops'
+import { ApiError, errorMessage, type DevOpsClient } from '../api/devops'
 import {
   listReleaseDefinitions,
   listReleases,
   listApprovals,
   updateApproval,
   deployEnvironment,
+  isActiveStatus,
   type ReleaseDefinition,
   type Release,
+  type ReleaseEnvironment,
   type Approval,
 } from '../api/releases'
+import { useLivePolling } from './useLivePolling'
+import { mapStatus } from './status'
+import { DeployLogDialog } from './DeployLogDialog'
 import './ReleaseList.css'
 
 const FAV_KEY = 'cn-devops-fav-releases'
@@ -54,6 +59,13 @@ export function ReleaseList({ client, project }: Props) {
   const [approvalsLoading, setApprovalsLoading] = useState(false)
   const [approvalBusy, setApprovalBusy] = useState<number | null>(null)
   const [stageBusy, setStageBusy] = useState<number | null>(null)
+  const [logTarget, setLogTarget] = useState<{ release: Release; env: ReleaseEnvironment } | null>(null)
+  const [pollAuthBlocked, setPollAuthBlocked] = useState(false)
+
+  const expandedDefIdRef = useRef(expandedDefId)
+  const expandedReleaseIdRef = useRef(expandedReleaseId)
+  useEffect(() => { expandedDefIdRef.current = expandedDefId }, [expandedDefId])
+  useEffect(() => { expandedReleaseIdRef.current = expandedReleaseId }, [expandedReleaseId])
 
   useEffect(() => {
     if (!project) return
@@ -124,6 +136,32 @@ export function ReleaseList({ client, project }: Props) {
       setApprovalsLoading(false)
     }
   }, [client, project])
+
+  const expandedRelease = releases.find(r => r.id === expandedReleaseId)
+  const hasActiveStage = expandedRelease?.environments.some(env => isActiveStatus(env.status)) ?? false
+
+  /** Refreshes releases and approvals without touching the loading flags, so a live tick does not blank the list. */
+  const refreshQuietly = useCallback(async () => {
+    if (expandedDefId === null) return
+    const forDefId = expandedDefId
+    const forReleaseId = expandedReleaseId
+    try {
+      const r = await listReleases(client, project, forDefId)
+      if (expandedDefIdRef.current === forDefId) setReleases(r)
+      if (forReleaseId !== null) {
+        const a = await listApprovals(client, project, forReleaseId)
+        if (expandedReleaseIdRef.current === forReleaseId) setApprovals(a)
+      }
+    } catch (err) {
+      console.error('Live refresh failed:', err)
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        setPollAuthBlocked(true)
+        setError(`Live refresh stopped: ${errorMessage(err)}`)
+      }
+    }
+  }, [client, project, expandedDefId, expandedReleaseId])
+
+  useLivePolling(hasActiveStage && !pollAuthBlocked, refreshQuietly)
 
   function toggleRelease(releaseId: number) {
     if (expandedReleaseId === releaseId) {
@@ -228,9 +266,14 @@ export function ReleaseList({ client, project }: Props) {
                         <span className={`release-status ${mapStatus(r.status)}`} />
                         <div className="release-details">
                           <span className="release-name">
-                            {r.name}
-                            {buildVersion && (
-                              <span className="release-build"> &bull; {buildVersion}</span>
+                            <span className="release-name-text">
+                              {r.name}
+                              {buildVersion && (
+                                <span className="release-build"> &bull; {buildVersion}</span>
+                              )}
+                            </span>
+                            {isExpanded && hasActiveStage && (
+                              <span className="live-dot" role="img" aria-label="Live - refreshing while the deployment runs" />
                             )}
                           </span>
                           <span className="release-meta">
@@ -271,8 +314,14 @@ export function ReleaseList({ client, project }: Props) {
                               const isDeploy = status === 'notStarted'
                               return (
                                 <li key={env.id} className={`stage-item stage-${status}`}>
-                                  <span className="stage-name">{env.name}</span>
-                                  <span className={`stage-status-text ${status}`}>{env.status}</span>
+                                  <button
+                                    className="stage-open"
+                                    onClick={() => setLogTarget({ release: r, env })}
+                                    title="Show deployment status and logs"
+                                  >
+                                    <span className="stage-name">{env.name}</span>
+                                    <span className={`stage-status-text ${status}`}>{env.status}</span>
+                                  </button>
                                   {hasPendingApproval && (
                                     <div className="stage-actions">
                                       <button
@@ -355,16 +404,16 @@ export function ReleaseList({ client, project }: Props) {
       {!loading && definitions.length > 0 && favDefs.length === 0 && otherDefs.length > 0 && !showOther && (
         <p className="hint">Tap the star to add favorites</p>
       )}
+
+      {logTarget && (
+        <DeployLogDialog
+          client={client}
+          project={project}
+          release={logTarget.release}
+          environment={logTarget.env}
+          onClose={() => setLogTarget(null)}
+        />
+      )}
     </div>
   )
-}
-
-function mapStatus(status: string): string {
-  const s = status.toLowerCase()
-  if (s === 'succeeded' || s === 'active') return 'succeeded'
-  if (s === 'failed' || s === 'rejected') return 'failed'
-  if (s === 'inprogress' || s === 'queued') return 'inProgress'
-  if (s === 'notstarted' || s === 'notdeployed' || s === 'undefined') return 'notStarted'
-  if (s === 'canceled' || s === 'cancelled') return 'canceled'
-  return s
 }
